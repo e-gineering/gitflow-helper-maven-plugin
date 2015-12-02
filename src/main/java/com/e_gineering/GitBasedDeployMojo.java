@@ -48,7 +48,7 @@ public class GitBasedDeployMojo extends AbstractGitEnforcerMojo {
              * /origin/development goes to the 'snapshot' repo.
              * All other builds will use the default semantics for 'deploy'.
              */
-            if (gitBranch.matches(masterBranch)) {
+            if (gitBranch.matches(masterBranchPattern)) {
                 // Deploy to the normal release repository.
                 getLog().info("Building from master branch. Setting release artifact repository to: [" + releaseDeploymentRepository + "]");
                 project.setSnapshotArtifactRepository(null);
@@ -81,7 +81,7 @@ public class GitBasedDeployMojo extends AbstractGitEnforcerMojo {
         }
     }
 
-    private ArtifactRepository getDeploymentRepository(String altRepository) throws MojoExecutionException, MojoFailureException {
+    private ArtifactRepository getDeploymentRepository(final String altRepository) throws MojoExecutionException, MojoFailureException {
         Matcher matcher = ALT_REPO_SYNTAX_PATTERN.matcher(altRepository);
         if (!matcher.matches()) {
             throw new MojoFailureException(altRepository, "Invalid syntax for repository.",
@@ -97,7 +97,7 @@ public class GitBasedDeployMojo extends AbstractGitEnforcerMojo {
         return repositoryFactory.createDeploymentArtifactRepository(id, url, repoLayout, true);
     }
 
-    private ArtifactRepositoryLayout getLayout(String id) throws MojoExecutionException {
+    private ArtifactRepositoryLayout getLayout(final String id) throws MojoExecutionException {
         ArtifactRepositoryLayout layout = repositoryLayouts.get(id);
         if (layout == null) {
             throw new MojoExecutionException("Invalid repository layout: " + id);
