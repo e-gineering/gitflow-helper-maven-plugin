@@ -1,0 +1,28 @@
+package com.e_gineering;
+
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
+
+/**
+ * Abstracts out the basic properties common to all our Mojos.
+ */
+public abstract class AbstractGitEnforcerMojo extends AbstractMojo {
+    @Parameter(defaultValue = "${project}", readonly = true, required = true)
+    protected MavenProject project;
+
+    @Parameter(defaultValue = "/origin/master", property = "masterBranch", required = true)
+    protected String masterBranch;
+
+    @Parameter(defaultValue = "/origin/release/(.*)", property = "releaseBranchPattern", required = true)
+    protected String releaseBranchPattern;
+
+    @Parameter(defaultValue = "/origin/hotfix/(.*)", property = "hotfixBranchPattern", required = true)
+    protected String hotfixBranchPattern;
+
+    @Parameter(defaultValue = "/origin/bugfix/.*", property = "bugfixBranchPattern", required = true)
+    protected String bugfixBranchPattern;
+
+    @Parameter(defaultValue = "/origin/development", property = "developmentBranchPattern", required = true)
+    protected String developmentBranchPattern;
+}

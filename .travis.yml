@@ -1,0 +1,17 @@
+language: java
+
+script: mvn verify
+
+jdk:
+ - openjdk7
+ - oraclejdk7
+ - oraclejdk8
+
+cache:
+  directories:
+  - $HOME/.m2
+
+notifications:
+  email:
+    recipients:
+     - eg.oss@e-gineering.com
