@@ -31,3 +31,7 @@ and installed into an environment.
 You can achieve the gold standard of CI/CD with tools like [Jenkins](https://jenkins-ci.org/), [Bitbucket Server](https://www.atlassian.com/software/bitbucket/server) (formerly Stash), and [Nexus](http://www.sonatype.org/nexus/), and keep it simple enough for small (or large!) teams to effectively use and maintain.
 
 // TODO: Elaborate.
+
+## Master Branch (Release) Tagging
+
+// TODO: Elaborate
