@@ -1,4 +1,4 @@
-# jenkins-git-deploy-enforcer-maven-plugin
+# jenkins-git-deploy-enforcer-maven-plugin [![Build Status](https://travis-ci.org/egineering-llc/jenkins-git-deploy-enforcer-maven-plugin.svg?branch=master)](https://travis-ci.org/egineering-llc/jenkins-git-deploy-enforcer-maven-plugin)
 
 A maven plugin intended to be used in conjunction with Jenkins / Hudson builds for :
 
