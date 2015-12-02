@@ -31,9 +31,6 @@ public class TagMasterMojo extends AbstractGitEnforcerMojo {
     @Parameter(defaultValue = "1.9.4", property = "tag.plugin.version", required = true)
     private String tagVersion;
 
-    @Parameter(defaultValue = "tag", property = "tag.plugin.goal", required = true)
-    private String tagGoal;
-
     @Component
     private MavenSession mavenSession;
 
@@ -58,7 +55,7 @@ public class TagMasterMojo extends AbstractGitEnforcerMojo {
                                 artifactId(tagArtifactId),
                                 version(tagVersion)
                         ),
-                        goal(tagGoal),
+                        goal("tag"),
                         configuration(
                                 element(name("tag"), tag),
                                 element(name("developerConnectionUrl"), "scm:git:" + gitURL)
@@ -70,10 +67,10 @@ public class TagMasterMojo extends AbstractGitEnforcerMojo {
                         )
                 );
             } else {
-                getLog().info("CI build from a non-master branch. Leaving build configuration unaltered.");
+                getLog().debug("CI build from a non-master branch. Leaving build configuration unaltered.");
             }
         } else {
-            getLog().info("CI git environment variables unset or missing. Leaving build configuration unaltered.");
+            getLog().debug("CI git environment variables unset or missing. Leaving build configuration unaltered.");
         }
     }
 }
