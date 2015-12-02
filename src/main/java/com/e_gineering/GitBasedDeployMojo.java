@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
 @Mojo(name = "determine-deploy-target", defaultPhase = LifecyclePhase.VALIDATE)
 public class GitBasedDeployMojo extends AbstractGitEnforcerMojo {
 
-    private static final Pattern ALT_REPO_SYNTAX_PATTERN = Pattern.compile("(.+)::(.+)::(.+)");
+    private static final Pattern ALT_REPO_SYNTAX_PATTERN = Pattern.compile("(.+)::(.+)::(.+)::(.+)");
 
     @Parameter(property = "releaseDeploymentRepository", required = true)
     private String releaseDeploymentRepository;
@@ -85,16 +85,17 @@ public class GitBasedDeployMojo extends AbstractGitEnforcerMojo {
         Matcher matcher = ALT_REPO_SYNTAX_PATTERN.matcher(altRepository);
         if (!matcher.matches()) {
             throw new MojoFailureException(altRepository, "Invalid syntax for repository.",
-                    "Invalid syntax for repository. Use \"id::layout::url\".");
+                    "Invalid syntax for repository. Use \"id::layout::url::unique\".");
         }
 
         String id = matcher.group(1).trim();
         String layout = matcher.group(2).trim();
         String url = matcher.group(3).trim();
+        boolean unique = Boolean.parseBoolean(matcher.group(4).trim());
 
         ArtifactRepositoryLayout repoLayout = getLayout(layout);
 
-        return repositoryFactory.createDeploymentArtifactRepository(id, url, repoLayout, true);
+        return repositoryFactory.createDeploymentArtifactRepository(id, url, repoLayout, unique);
     }
 
     private ArtifactRepositoryLayout getLayout(final String id) throws MojoExecutionException {
