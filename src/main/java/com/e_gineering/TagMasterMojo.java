@@ -13,14 +13,26 @@ import org.apache.maven.plugins.annotations.Parameter;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.*;
 
 /**
- * Invokes configures the builds SCM settings based on environment variables from Jenkins, and does an scm:tag
+ * Invokes configures the builds SCM settings based on environment variables from a CI Server, and does an scm:tag
  * If the env.GIT_BRANCH matches the masterBranchPattern.
  */
-@Mojo(name = "tag-master", defaultPhase = LifecyclePhase.VERIFY)
+@Mojo(name = "tag-master", defaultPhase = LifecyclePhase.DEPLOY)
 public class TagMasterMojo extends AbstractGitEnforcerMojo {
 
     @Parameter(defaultValue = "${project.version}", property = "tag", required = true)
     private String tag;
+
+    @Parameter(defaultValue = "org.apache.maven.plugins", property = "tag.plugin.groupId", required = true)
+    private String tagGroupId;
+
+    @Parameter(defaultValue = "maven-scm-plugin", property = "tag.plugin.artifactId", required = true)
+    private String tagArtifactId;
+
+    @Parameter(defaultValue = "1.9.4", property = "tag.plugin.version", required = true)
+    private String tagVersion;
+
+    @Parameter(defaultValue = "tag", property = "tag.plugin.goal", required = true)
+    private String tagGoal;
 
     @Component
     private MavenSession mavenSession;
@@ -33,24 +45,20 @@ public class TagMasterMojo extends AbstractGitEnforcerMojo {
         String gitURL = System.getenv("GIT_URL");
 
         if (gitBranch != null && gitURL != null) {
-            getLog().info("Detected GIT_BRANCH: '" + gitBranch + "' in build environment.");
-            getLog().info("Detected GIT_URL: '" + gitURL + "' in build enviornment.");
+            getLog().debug("Detected GIT_BRANCH: '" + gitBranch + "' in build environment.");
+            getLog().debug("Detected GIT_URL: '" + gitURL + "' in build environment.");
 
             if (gitBranch.matches(masterBranchPattern)) {
-                getLog().info("Attempting to invoke an scm:tag execution for a build on the master branch...");
+                getLog().info("Invoking scm:tag for CI build matching masterBranchPattern: [" + masterBranchPattern + "]");
 
-                if (project.getScm() == null) {
-                    project.setScm(new Scm());
-                }
-                project.getScm().setDeveloperConnection("scm:git:" + gitURL);
-
+                // Use the execute mojo to run the maven-scm-plugin...
                 executeMojo(
                         plugin(
-                                groupId("org.apache.maven.plugins"),
-                                artifactId("maven-scm-plugin"),
-                                version("1.9.4")
+                                groupId(tagGroupId),
+                                artifactId(tagArtifactId),
+                                version(tagVersion)
                         ),
-                        goal("tag"),
+                        goal(tagGoal),
                         configuration(
                                 element(name("tag"), tag),
                                 element(name("developerConnectionUrl"), "scm:git:" + gitURL)
@@ -62,10 +70,10 @@ public class TagMasterMojo extends AbstractGitEnforcerMojo {
                         )
                 );
             } else {
-                getLog().info("Jenkins build from a non-master branch. Leaving build configuration unaltered.");
+                getLog().info("CI build from a non-master branch. Leaving build configuration unaltered.");
             }
         } else {
-            getLog().info("Jenkins git environment variables unset or missing. Leaving build configuration unaltered.");
+            getLog().info("CI git environment variables unset or missing. Leaving build configuration unaltered.");
         }
     }
 }
