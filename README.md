@@ -9,7 +9,7 @@ A maven plugin intended to be used in conjunction with Jenkins / Hudson builds f
 
 This plugin solves two specific issues common in a consolidated Hudson/Jenkins Continuous Integration (CI) and Continuous Delivery (CD) job.
 
- 1. Ensure the developers are following the (git branching) project version rules, and fail the build they're not.
+ 1. Ensure the developers are following the (git branching) project version rules, and fail the build if they are not.
  2. Enable the maven-deploy-plugin to target a snapshots, test-releases, and releases repository.
   
 ## Version Assertion
