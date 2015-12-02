@@ -4,6 +4,7 @@ A maven plugin intended to be used in conjunction with Jenkins / Hudson builds f
 
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
  * Setting a [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/) repository based upon the current git branch.
+ * Tagging a git revision if a CI build on the master branch is successful, using the CI server's repository connection. (Zero Maven scm configuration necessary)
 
 # Why would I want to use this?
 
@@ -11,6 +12,7 @@ This plugin solves two specific issues common in a consolidated Hudson/Jenkins C
 
  1. Ensure the developers are following the (git branching) project version rules, and fail the build if they are not.
  2. Enable the maven-deploy-plugin to target a snapshots, test-releases, and releases repository.
+ 3. Reliably tag deploy builds from the 'master' branch, with minimial configuration.
   
 ## Version Assertion
 
