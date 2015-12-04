@@ -5,17 +5,71 @@ A maven plugin intended to be used in conjunction with Jenkins / Hudson builds f
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
  * Setting a [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/) repository based upon the current git branch.
  * Tagging a git revision if a CI build on the master branch is successful, using the CI server's repository connection. (Zero Maven scm configuration necessary)
- * Promoting existing test deployments for release, rather than re-building the artifact.
+ * Promoting existing test deployments for release, rather than re-building the artifact. Eliminates the risk of accidental master merges or commits resulting in untested code being release. 
 
 # Why would I want to use this?
 
-This plugin solves two specific issues common in a consolidated Hudson/Jenkins Continuous Integration (CI) and Continuous Delivery (CD) job.
+This plugin solves a few specific issues common in a consolidated Hudson/Jenkins Continuous Integration (CI) and Continuous Delivery (CD) job.
 
  1. Ensure the developers are following the (git branching) project version rules, and fail the build if they are not.
  2. Enable the maven-deploy-plugin to target a snapshots, test-releases, and releases repository.
- 3. Reliably tag deploy builds from the 'master' branch, with minimial configuration.
- 4. Promote existing, tested, and accepted artifacts from a test repository to production repository, with a single build definition, job, and process.
-  
+ 3. _Copy_ (rather than rebuild) the tested artifacts from the test-releases repository to the release repository, without doing a full project rebuild from the master branch.
+ 4. Reliably tag deploy builds from the 'master' branch
+ 
+# I want all of that. (Usage)
+
+The above tasks can be enabled on your build by configuring the plugin goals with the default lifecycle bindings, and adding the build extension.
+
+    <project...>
+    ...
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.e-gineering</groupId>
+                <artifactId>gitflow-helper-maven-plugin</artifactId>
+                <version>${gitflow.helper.plugin.version}</version>
+                <configuration>
+                    <!-- These repository definitions expect id::layout::url::unique 
+                         release::default::https://some.server.path/content/repositories/test-releases::false
+                    -->
+                    <releaseDeploymentRepository>${release.repository}</releaseDeploymentRepository>
+                    <testDeploymentRepository>${test.repository}</testDeploymentRepository>
+                    <snapshotDeploymentRepository>${snapshot.repository}</snapshotDeploymentRepository>
+                    <tag>${project.artifactId}-${project.version}</tag>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>enforce-versions</goal>
+                            <goal>retarget-deploy</goal>
+                            <goal>tag-master</goal>
+                            <goal>promote-master</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        
+        ...
+        
+        <extensions>
+            <extension>
+                <groupId>com.e-gineering</groupId>
+                <artifactId>gitflow-helper-maven-plugin</artifactId>
+                <version>${gitflow.helper.plugin.version}</version>
+            </extension>
+            
+            ...
+            
+        </extensions>
+    </build>
+    
+    ...
+    
+    
+    </project>
+
+
 ## Version Assertion
 
 // TODO: Elaborate.
