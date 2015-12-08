@@ -1,6 +1,6 @@
 # gitflow-helper-maven-plugin [![Build Status](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin.svg?branch=master)](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin)
 
-A maven plugin intended to be used in conjunction with Jenkins / Hudson builds for :
+A maven plugin intended to be used in conjunction with Jenkins / Hudson builds for:
 
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
  * Setting a [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/) repository based upon the current git branch.
@@ -25,12 +25,13 @@ If you want to do three-tier deployments (Development, test / stage, production)
  
 # I want all of that. (Usage)
 
-The above tasks can be enabled on your build by: 
+The above tasks can be enabled on your build by:
+
 * Having GIT_BRANCH and GIT_URL environment variables set. (Jenkins & Hudson provide these by default) 
 * Configuring the plugin goals and adding the build extension to your maven project.
 
-
-    <project>
+```
+<project>
     ...
     <build>
         <plugins>
@@ -73,12 +74,9 @@ The above tasks can be enabled on your build by:
             
         </extensions>
     </build>
-    
-    ...
-    
-    
-    </project>
-
+...
+</project>
+```
 
 ## Goal: `enforce-versions` (Version & Branch Name Assertions)
 
@@ -96,8 +94,9 @@ The goal accomplishes this by checking the maven pom.xml version value, and asse
 against regular expressions, extracting version numbers from the branch names where applicable. If a regex specifies a subgroup 1, the content of that 
 subgroup is asserted to equal the version defined in the pom.xml.
 
-The following properties change this goals behavior
-| Property             | Default Value | -SNAPSHOT versions allowed? | Description |
+The following properties change this goals behavior:
+
+| Property             | Default Value | SNAPSHOT allowed? | Description |
 | -------------------- | ------------- | --------------------------- | ----------- |
 | masterBranchPattern  | origin/master | No | Regex. When matched, signals the master branch is being built. Note the lack of a subgroup. |
 | releaseBranchPattern | origin/release/(.*) | No | Regex. When matched, signals a release branch being built. Subgroup 1, if present, must match the maven project version. |
@@ -118,6 +117,7 @@ The `retarget-deploy` goal sets the snapshot and release repository for the proj
 plugins in the build process (deploy, site-deploy, etc.) will use the repositories set by the `retarget-deploy` goal.
 
 | Property | Description | 
+| -------- | ----------- |
 | releaseDeploymentRepository | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern`) |
 | stageDeploymentRepository | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern` | 
 | snapshotDeploymentRepository | The repository to use for snapshots. (Builds matching `developmentBranchPattern` |
@@ -189,7 +189,7 @@ The following properties can be configured for this goal:
 | tag.plugin.version | 1.9.4 | The version of the plugin to use for tagging. |
 
 
-## Goal: `promote-master` and the Build Extension. (Staged Artifact Copy to Release)
+## Goal: `promote-master` and the Build Extension. (Copy Staged Artifacts to Releases)
 
 With gitflow, a new version of a product is prepared in the `release/.*` and `hotfix/.*` branches of the project.
 These artifacts are put through their paces and validated before the merge back into the master branch.
