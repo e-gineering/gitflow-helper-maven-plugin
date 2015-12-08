@@ -52,9 +52,9 @@ public class PromoteMasterMojo extends AbstractGitBasedDeployMojo {
     protected void execute(final GitBranchType type) throws MojoExecutionException, MojoFailureException {
         switch (type) {
             case MASTER: {
-                getLog().info("Attaching existing artifacts from testDeploymentRepository [" + testDeploymentRepository + "]");
+                getLog().info("Attaching existing artifacts from stageDeploymentRepository [" + stageDeploymentRepository + "]");
 
-                List<RemoteRepository> remoteRepositories = Arrays.asList(getRepository(testDeploymentRepository));
+                List<RemoteRepository> remoteRepositories = Arrays.asList(getRepository(stageDeploymentRepository));
 
                 // A place to store our resolved files...
                 List<ArtifactResult> resolvedArtifacts = new ArrayList<ArtifactResult>();
@@ -89,7 +89,7 @@ public class PromoteMasterMojo extends AbstractGitBasedDeployMojo {
                 try {
                     resolvedArtifacts.addAll(artifactResolver.resolveArtifacts(session, requiredArtifacts));
                 } catch (ArtifactResolutionException are) {
-                    throw new MojoExecutionException("Failed to resolve the required project files from the testDeploymentRepository", are);
+                    throw new MojoExecutionException("Failed to resolve the required project files from the stageDeploymentRepository", are);
                 }
 
                 // Optional Artifacts... We do these one at a time so we don't fail the build....

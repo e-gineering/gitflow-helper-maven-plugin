@@ -23,8 +23,8 @@ public abstract class AbstractGitBasedDeployMojo extends AbstractGitEnforcerMojo
     @Parameter(property = "releaseDeploymentRepository", required = true)
     protected String releaseDeploymentRepository;
 
-    @Parameter(property = "testDeploymentRepository", required = true)
-    protected String testDeploymentRepository;
+    @Parameter(property = "stageDeploymentRepository", required = true)
+    protected String stageDeploymentRepository;
 
     @Parameter(property = "snapshotDeploymentRepository", required = true)
     protected String snapshotDeploymentRepository;

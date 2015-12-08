@@ -10,7 +10,7 @@ import org.apache.maven.plugins.annotations.Mojo;
  * Set the target repository for deployment based upon the GIT_BRANCH being built.
  */
 @Mojo(name = "retarget-deploy", defaultPhase = LifecyclePhase.VALIDATE)
-public class BranchTypeDeployTargetMojo extends AbstractGitBasedDeployMojo {
+public class RetargetDeployMojo extends AbstractGitBasedDeployMojo {
     @Override
     protected void execute(final GitBranchType type) throws MojoExecutionException, MojoFailureException {
         if (project.getDistributionManagement() == null) {
@@ -25,15 +25,15 @@ public class BranchTypeDeployTargetMojo extends AbstractGitBasedDeployMojo {
                 break;
             }
             case RELEASE: {
-                getLog().info("Setting release artifact repository to: [" + testDeploymentRepository + "]");
+                getLog().info("Setting release artifact repository to: [" + stageDeploymentRepository + "]");
                 project.setSnapshotArtifactRepository(null);
-                project.setReleaseArtifactRepository(getDeploymentRepository(testDeploymentRepository));
+                project.setReleaseArtifactRepository(getDeploymentRepository(stageDeploymentRepository));
                 break;
             }
             case HOTFIX: {
-                getLog().info("Setting release artifact repository to: [" + testDeploymentRepository + "]");
+                getLog().info("Setting release artifact repository to: [" + stageDeploymentRepository + "]");
                 project.setSnapshotArtifactRepository(null);
-                project.setReleaseArtifactRepository(getDeploymentRepository(testDeploymentRepository));
+                project.setReleaseArtifactRepository(getDeploymentRepository(stageDeploymentRepository));
                 break;
             }
             case DEVELOPMENT: {
