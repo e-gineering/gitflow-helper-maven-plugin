@@ -26,10 +26,11 @@ If you want to do three-tier deployments (Development, test / stage, production)
 # I want all of that. (Usage)
 
 The above tasks can be enabled on your build by: 
-* Having GIT_BRANCH and GIT_URL environment variables set (Jenkins & Hudson provide these by default). 
+* Having GIT_BRANCH and GIT_URL environment variables set. (Jenkins & Hudson provide these by default) 
 * Configuring the plugin goals and adding the build extension to your maven project.
 
-    <project...>
+
+    <project>
     ...
     <build>
         <plugins>
