@@ -5,7 +5,7 @@ A build extension and plugin that helps Maven play nicely with gitflow projects,
 It does so by:
 
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
- * Coercing Maven to gracefully support the gitflow workflow without imposing complex CI job configurations or complex maven setups.
+ * Coercing Maven to gracefully support the gitflow workflow without imposing complex CI job configurations or complex Maven setups.
     * Setting distributionManagement repositories (for things like [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/)) based upon the current git branch.
     * SCM tagging builds for the master branch, using the CI server's repository connection information. (Zero Maven scm configuration necessary)
     * Promoting existing tested (staged) artifacts for release, rather than re-building the artifacts. Eliminates the risk of accidental master merges or commits resulting in untested code being released, and provides digest hash traceability for the history of artifacts.
@@ -13,7 +13,7 @@ It does so by:
 
 # Why would I want to use this?
 
-This plugin solves a few specific issues common in a consolidated Hudson/Jenkins Continuous Integration (CI) and Continuous Delivery (CD) jobs for projects following the gitflow workflow.
+This plugin solves a few specific issues common in consolidated Hudson/Jenkins Continuous Integration (CI) and Continuous Delivery (CD) jobs for projects following the gitflow workflow.
 
  1. Ensure the developers are following the (git branching) project version rules, and fail the build if they are not.
  2. Enable the maven-deploy-plugin to target a snapshots, test-releases, and releases repository.
@@ -22,7 +22,7 @@ This plugin solves a few specific issues common in a consolidated Hudson/Jenkins
  
 In addition to supporting these goals for the project, this plugin does it in a manner that tries to be as effortless (yet configurable) as possible.
 If you use non-standard gitflow branch names (emer instead of hotfix), this plugin supports that. If you don't want to do version enforcement, this plugin supports that. 
-If you want to use scm tagging with a custom tag format, we support that. If you want to use scm tagging **without having to add the <scm> section to your pom.xml or adding arcane -Dproperty arguments to your maven command**, this plugin supports that. 
+If you want to use scm tagging with a custom tag format, we support that. If you want to use scm tagging **without having to add the <scm> section to your pom.xml or adding arcane -Dproperty arguments to your Maven command**, this plugin supports that. 
 If you want to do three-tier deployments (snapshot, stage, production) without 'professional' artifact repository tools, and **without having to define a <distributionManagement> section to your pom.xml**, yep, this plugin supports that too.
 
 All of the solutions to these issues are implemented independently in different plugin goals, so you can pick and choose what parts you'd like to leverage.
@@ -30,7 +30,7 @@ All of the solutions to these issues are implemented independently in different 
 # I want all of that. (Usage)
 
  1. Make sure your build server sets environment variables for git branches and git URLs. The plugin defaults are configured out of the box for Jenkins & Hudson.
- 2. Configure the plugin goals and add the build extension to your maven project. Here's an example that will might get you going quickly...
+ 2. Configure the plugin goals and add the build extension to your Maven project. Here's an example that will get you going quickly...
 
 ```
 <project>
@@ -42,7 +42,7 @@ All of the solutions to these issues are implemented independently in different 
                 <artifactId>gitflow-helper-maven-plugin</artifactId>
                 <version>${gitflow.helper.plugin.version}</version>
                 <configuration>
-                    <!-- These repository definitions expect id::layout::url::unique 
+                    <!-- These repository definitions expect id::layout::url::unique, for example
                          release::default::https://some.server.path/content/repositories/test-releases::false
                     -->
                     <releaseDeploymentRepository>${release.repository}</releaseDeploymentRepository>
@@ -79,8 +79,8 @@ All of the solutions to these issues are implemented independently in different 
 
 ## Goal: `enforce-versions` (Version & Branch Name Assertions)
 
-One common stumbling block for teams adjusting to gitflow with maven projects is the discipline required to keep maven version numbers up to date.
-In practice, the maven versions should:
+One common stumbling block for teams adjusting to gitflow with Maven projects is the discipline required to keep Maven version numbers up to date.
+In practice, the Maven versions should:
  
  * Be synchronized with release branch and hotfix branch names.
  * Never be -SNAPSHOT in the master branch, release, hotfix, or bugfix branches.
@@ -89,24 +89,24 @@ In practice, the maven versions should:
 
 The `enforce-versions` goal asserts these semantics when it can resolve the `gitBranchExpression`.
 
-The goal accomplishes this by checking the maven pom.xml version value, and asserting the -SNAPSHOT status, as well as matching the current branch name
+The goal accomplishes this by checking the Maven pom.xml version value, and asserting the -SNAPSHOT status, as well as matching the current branch name
 against regular expressions, extracting version numbers from the branch names where applicable. If a regex specifies a subgroup 1, the content of that 
 subgroup is asserted to equal the version defined in the pom.xml.
 
-The following properties change this goals behavior:
+The following properties change the behavior of this goal:
 
 | Property             | Default Value | SNAPSHOT allowed? | Description |
 | -------------------- | ------------- | --------------------------- | ----------- |
 | gitBranchExpression  | ${env.GIT_BRANCH} | n/a | Maven property expression to resolve in order to determine the current git branch |
 | masterBranchPattern  | origin/master | No | Regex. When matched, signals the master branch is being built. Note the lack of a subgroup. |
-| releaseBranchPattern | origin/release/(.*) | No | Regex. When matched, signals a release branch being built. Subgroup 1, if present, must match the maven project version. |
-| hotfixBranchPattern  | origin/hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Subgroup 1, if present, must match the maven project version. |
+| releaseBranchPattern | origin/release/(.*) | No | Regex. When matched, signals a release branch being built. Subgroup 1, if present, must match the Maven project version. |
+| hotfixBranchPattern  | origin/hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Subgroup 1, if present, must match the Maven project version. |
 | bugfixBranchPattern  | origin/bugfix/.* | No | Regex. When matched, signals a bugfix branch is being built. Note the lack of a subgroup. |
 | developmentBranchPattern | origin/development | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
 
 ## Goal: `retarget-deploy` (Branch Specific Deploy Targets & Staging)
 
-One of the challenges of building a good CI/CD job for maven environments is the lack of a 'staging' repository baked into maven.
+One of the challenges of building a good CI/CD job for Maven environments is the lack of a 'staging' repository baked into Maven.
 The maven-release-plugin does introduce a concept of a staging repository, but the imposed workflow from the release plugin is incompatible with CI 
 jobs and the gitflow model.
 
@@ -125,7 +125,7 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 
 **The repository properties should follow the following format**, `id::layout::url::uniqueVersion`.
 
-When using this plugin, the `<distributionManagement>` repository definitions can be completely removed from you pom.xml 
+When using this plugin, the `<distributionManagement>` repository definitions can be completely removed from your pom.xml 
 The following configuration block:
 
         <distributionManagement>
@@ -211,7 +211,7 @@ artifacts will have the same SHA and MD5 hash, and you'd have full trace-ability
 of achieving the ideal situation for gitflow deployment, where releases originate from the branches created for them, and code is **never deployed  
 directly from master**. Rather, master is really only used for tracking releases and branching to support production issues.
 
-To accomplish this the `promote-master` goal and a maven build extension work together.
+To accomplish this the `promote-master` goal and a Maven build extension work together.
 
 With the build extension added to your project, any build where the `gitBranchExpression` matches the `masterBranchPattern` will have it's
 build lifecycle (plugins, goals, etc) altered. Any plugin other than the gitflow-helper-maven-plugin, or the maven-deploy-plugin will be ignored 
@@ -220,6 +220,6 @@ build lifecycle (plugins, goals, etc) altered. Any plugin other than the gitflow
 The `promote-master` goal executes when the `gitBranchExpression` resolves to a value matching the `masterBranchPattern` regular expression.
  
 This goal resolves (and downloads) the artifacts matching the current `${project.version}` from the stage repository, then attaches them to the 
-current project in the maven build. This lets later plugins in the lifecycle (like the deploy plugin, which the extension won't remove) make use of 
-artifacts provided from the stage repository when it uploads to the releases repository. Effectively, making a build in master copy the artifacts from 
+current project in the Maven build. This lets later plugins in the lifecycle (like the deploy plugin, which the extension won't remove) make use of 
+artifacts provided from the stage repository when it uploads to the releases repository. Effectively, this makes a build in master copy the artifacts from 
 the stage repository to the releases repository.
