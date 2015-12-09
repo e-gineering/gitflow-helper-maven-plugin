@@ -29,7 +29,7 @@ All of the solutions to these issues are implemented independently in different 
  
 # I want all of that. (Usage)
 
- 1. Make sure your build server sets environment variables for git branches and git URLs.
+ 1. Make sure your build server sets environment variables for git branches and git URLs. The plugin defaults are configured out of the box for Jenkins & Hudson.
  2. Configure the plugin goals and add the build extension to your maven project. Here's an example that will might get you going quickly...
 
 ```
