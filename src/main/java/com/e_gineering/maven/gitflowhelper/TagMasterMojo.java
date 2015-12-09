@@ -15,7 +15,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.*;
 /**
  * Invokes configures the builds SCM settings based on environment variables from a CI Server, and does an scm:tag for builds from Master.
  */
-@Mojo(name = "tag-master", defaultPhase = LifecyclePhase.DEPLOY)
+@Mojo(name = "tag-master", defaultPhase = LifecyclePhase.INSTALL)
 public class TagMasterMojo extends AbstractGitflowBranchMojo {
 
     // @Parameter tag causes property resolution to fail for patterns containing ${env.}. Default provided in execute();
@@ -47,7 +47,7 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
                 gitURLProperty = "${env.GIT_URL}";
             }
             String gitURL = resolveExpression(gitURLProperty);
-            if (StringUtils.isNotEmpty(gitURL)) {
+            if (!gitURL.equals(gitURLProperty)) {
                 getLog().debug("Detected GIT_URL: '" + gitURL + "' in build environment.");
                 getLog().info("Invoking scm:tag for CI build matching branchPattern: [" + branchPattern + "]");
 
@@ -70,7 +70,7 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
                         )
                 );
             } else {
-                getLog().debug("CI git environment variables unset or missing. Leaving build configuration unaltered.");
+                throw new MojoFailureException("Unable to resolve gitURLProperty: " + gitURLProperty + ". Leaving build configuration unaltered.");
             }
         }
     }
