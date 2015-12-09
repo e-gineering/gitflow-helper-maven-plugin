@@ -1,10 +1,12 @@
-package com.e_gineering;
+package com.e_gineering.maven.gitflowhelper;
 
 import org.apache.maven.artifact.ArtifactUtils;
+import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 
+import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,34 +15,15 @@ import java.util.regex.Pattern;
  * git branch.
  */
 @Mojo(name = "enforce-versions", defaultPhase = LifecyclePhase.VALIDATE)
-public class EnforceVersionsMojo extends AbstractGitEnforcerMojo {
+public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
 
-    private String[] versionedBranchPatterns;
+    private static EnumSet<GitBranchType> versionedTypes = EnumSet.of(GitBranchType.MASTER, GitBranchType.RELEASE, GitBranchType.HOTFIX, GitBranchType.BUGFIX);
 
-    public void execute() throws MojoFailureException {
-        String gitBranch = System.getenv("GIT_BRANCH");
-        if (gitBranch != null) {
-            getLog().debug("Detected GIT_BRANCH: '" + gitBranch + "' in build environment.");
-
-            versionedBranchPatterns = new String[]{
-                    masterBranchPattern,
-                    releaseBranchPattern,
-                    hotfixBranchPattern,
-                    bugfixBranchPattern
-            };
-
-            Matcher gitMatcher = null;
-            int i = 0;
-            for (; i < versionedBranchPatterns.length; i++) {
-                Pattern branchPattern = Pattern.compile(versionedBranchPatterns[i]);
-                gitMatcher = branchPattern.matcher(gitBranch);
-                if (!gitMatcher.matches()) {
-                    gitMatcher = null;
-                } else {
-                    getLog().debug("Found matching pattern: " + versionedBranchPatterns[i]);
-                    break;
-                }
-            }
+    @Override
+    protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
+        if (versionedTypes.contains(type)) {
+            getLog().debug("Versioned Branch Type: " + type + " with branchPattern: " + branchPattern + " Checking against current branch: " + gitBranch);
+            Matcher gitMatcher = Pattern.compile(branchPattern).matcher(gitBranch);
 
             // Expecting a maven pom with a non-SNAPSHOT version.
             if (gitMatcher != null) {

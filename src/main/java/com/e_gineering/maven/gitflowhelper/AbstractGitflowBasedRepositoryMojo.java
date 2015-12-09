@@ -1,4 +1,4 @@
-package com.e_gineering;
+package com.e_gineering.maven.gitflowhelper;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
@@ -14,9 +14,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Sets the project release repository and snapshot repository to the proper locations given the current git branch.
+ * Common configuration and plumbing (support methods) for Repository operations on Gitflow Mojo.
  */
-public abstract class AbstractGitBasedDeployMojo extends AbstractGitEnforcerMojo {
+public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchMojo {
 
     private static final Pattern ALT_REPO_SYNTAX_PATTERN = Pattern.compile("(.+)::(.+)::(.+)::(.+)");
 
@@ -34,44 +34,6 @@ public abstract class AbstractGitBasedDeployMojo extends AbstractGitEnforcerMojo
 
     @Component(role = ArtifactRepositoryLayout.class)
     private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
-
-    protected abstract void execute(final GitBranchType type) throws MojoExecutionException, MojoFailureException;
-
-    private void logExecute(final GitBranchType type) throws MojoExecutionException, MojoFailureException {
-        if (!type.equals(GitBranchType.OTHER)) {
-            getLog().info("Building for " + type.name() + " git branch.");
-        }
-        execute(type);
-    }
-
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        String gitBranch = System.getenv("GIT_BRANCH");
-        if (gitBranch != null) {
-            getLog().debug("Detected GIT_BRANCH: '" + gitBranch + "' in build environment.");
-
-            /*
-             * /origin/master goes to the maven 'release' repo.
-             * /origin/release/.* , /origin/hotfix/.* , and /origin/bugfix/.* go to the maven 'test' repo.
-             * /origin/development goes to the 'snapshot' repo.
-             * All other builds will use the default semantics for 'deploy'.
-             */
-            if (gitBranch.matches(masterBranchPattern)) {
-                logExecute(GitBranchType.MASTER);
-            } else if (gitBranch.matches(releaseBranchPattern)) {
-                logExecute(GitBranchType.RELEASE);
-            } else if (gitBranch.matches(hotfixBranchPattern)) {
-                logExecute(GitBranchType.HOTFIX);
-            } else if (gitBranch.matches(bugfixBranchPattern)) {
-                logExecute(GitBranchType.BUGFIX);
-            } else if (gitBranch.matches(developmentBranchPattern)) {
-                logExecute(GitBranchType.DEVELOPMENT);
-            } else {
-                logExecute(GitBranchType.OTHER);
-            }
-        } else {
-            getLog().debug("GIT_BRANCH Undefined. Build will continue as configured.");
-        }
-    }
 
     protected ArtifactRepository getDeploymentRepository(final String altRepository) throws MojoExecutionException, MojoFailureException {
         Matcher matcher = ALT_REPO_SYNTAX_PATTERN.matcher(altRepository);
