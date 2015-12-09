@@ -5,7 +5,7 @@ A build extension and plugin that makes Maven work with gitflow projects and CI 
 It does so by:
 
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
- * Coercing Maven to gracefully support the gitflow workflow without imposing complex CI job configurations or complex maven setups.
+ * Coercing Maven to gracefully support the gitflow workflow without imposing complex CI job configurations or complex Maven setups.
     * Setting distributionManagement repositories (for things like [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/)) based upon the current git branch.
     * SCM tagging builds for the master branch, using the CI server's repository connection information. (Zero Maven scm configuration necessary)
     * Promoting existing tested (staged) artifacts for release, rather than re-building the artifacts. Eliminates the risk of accidental master merges or commits resulting in untested code being released, and provides digest hash traceability for the history of artifacts.
@@ -30,7 +30,7 @@ All of the solutions to these issues are implemented independently in different 
 # I want all of that. (Usage)
 
  1. Make sure your build server sets environment variables for git branches and git URLs.
- 2. Configure the plugin goals and add the build extension to your maven project. Here's an example that will might get you going quickly...
+ 2. Configure the plugin goals and add the build extension to your Maven project. Here's an example that will get you going quickly...
 
 ```
 <project>
