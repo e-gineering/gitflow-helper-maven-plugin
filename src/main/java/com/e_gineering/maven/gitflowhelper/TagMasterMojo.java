@@ -1,5 +1,6 @@
 package com.e_gineering.maven.gitflowhelper;
 
+import com.e_gineering.maven.gitflowhelper.properties.ExpansionBuffer;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -46,8 +47,9 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
                 gitURLExpression = "${env.GIT_URL}";
             }
             String gitURL = resolveExpression(gitURLExpression);
-            if (!gitURL.equals(gitURLExpression)) {
-                getLog().debug("Detected GIT_URL: '" + gitURL + "' in build environment.");
+            getLog().info("gitURLExpression: '" + gitURLExpression + "' resolved to: '" + gitURL + "'");
+            ExpansionBuffer eb = new ExpansionBuffer(gitURL);
+            if (!eb.hasMoreLegalPlaceholders()) {
                 getLog().info("Invoking scm:tag for CI build matching branchPattern: [" + branchPattern + "]");
 
                 // Use the execute mojo to run the maven-scm-plugin...

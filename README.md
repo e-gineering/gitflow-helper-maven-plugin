@@ -1,6 +1,6 @@
 # gitflow-helper-maven-plugin [![Build Status](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin.svg?branch=master)](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin)
 
-A build extension and plugin that makes Maven work with gitflow projects and CI servers.
+A build extension and plugin that helps Maven play nicely with gitflow projects, CI servers and local development.
 
 It does so by:
 
@@ -29,7 +29,7 @@ All of the solutions to these issues are implemented independently in different 
  
 # I want all of that. (Usage)
 
- 1. Make sure your build server sets environment variables for git branches and git URLs.
+ 1. Make sure your build server sets environment variables for git branches and git URLs. The plugin defaults are configured out of the box for Jenkins & Hudson.
  2. Configure the plugin goals and add the build extension to your Maven project. Here's an example that will get you going quickly...
 
 ```
@@ -176,7 +176,13 @@ In a gitflow environment, a commit to a master branch should trigger a job to bu
  
 The `tag-master` goal executes the [maven-scm-plugin tag goal](https://maven.apache.org/scm/maven-scm-plugin/tag-mojo.html) when the 
 `gitBranchExpression` resolves to a value matching the `masterBranchPattern` regular expression. To determine the SCM URL to use, the `gitURLExpression`
-is evaluated at run-time. The default expression, `${env.GIT_URL}`, is used by Jenkins & Hudson. To resolve the `<developerConnection>` in an `<scm>` block in your pom, you could use `${project.scm.developerConnection}`.
+is evaluated at run-time. The default expression, `${env.GIT_URL}`, is provided by Jenkins & Hudson. 
+
+To resolve the `<developerConnection>` in an `<scm>` block in your pom, you can specify the following in your plugin configuration:
+
+```
+<gitURLExpression>${project.scm.developerConnection}</gitURLExpression>
+```
 
 The following properties can be configured for this goal:
 
