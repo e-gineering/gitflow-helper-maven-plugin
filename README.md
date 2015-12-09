@@ -1,6 +1,8 @@
 # gitflow-helper-maven-plugin [![Build Status](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin.svg?branch=master)](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin)
 
-A maven plugin intended to be used in conjunction with Jenkins / Hudson builds for:
+A build extension and plugin that makes Maven work with gitflow projects and CI servers like Jenkins & Hudson.
+
+It does so by:
 
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
  * Setting a [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/) repository based upon the current git branch.
@@ -19,16 +21,14 @@ This plugin solves a few specific issues common in a consolidated Hudson/Jenkins
  4. Reliably tag deploy builds from the 'master' branch
  
 In addition to supporting these goals for the project, this plugin does it in a manner that tries to be as effortless (yet configurable) as possible.
-If you use non-standard gitflow branch names (emer instead of hotfix), we support that. If you don't want to do version enforcement, we support that. 
-If you want to use scm tagging with a custom tag format, we support that. If you want to use scm tagging **without having to add the <scm> section to your pom.xml**, we support that. 
-If you want to do three-tier deployments (Development, test / stage, production) **without having to define a <distributionManagement> section to your pom.xml**, yep, we support that too.
+If you use non-standard gitflow branch names (emer instead of hotfix), this plugin supports that. If you don't want to do version enforcement, this plugin supports that. 
+If you want to use scm tagging with a custom tag format, we support that. If you want to use scm tagging **without having to add the <scm> section to your pom.xml or adding arcane -Dproperty arguments to your maven command**, this plugin supports that. 
+If you want to do three-tier deployments (snapshot, stage, production) without 'professional' artifact repository tools, and **without having to define a <distributionManagement> section to your pom.xml**, yep, this plugin supports that too.
  
 # I want all of that. (Usage)
 
-The above tasks can be enabled on your build by:
-
-* Having GIT_BRANCH and GIT_URL environment variables set. (Jenkins & Hudson provide these by default) 
-* Configuring the plugin goals and adding the build extension to your maven project.
+ 1. Make sure your build server sets environment variables for GIT_BRANCH, and GIT_URL. Jenkins & Hudson do this by default. The GIT_URL needs to be a developer connection type URL.
+ 2. Configure the plugin goals and add the build extension to your maven project. Here's an example that will might get you going quickly...
 
 ```
 <project>
@@ -46,7 +46,6 @@ The above tasks can be enabled on your build by:
                     <releaseDeploymentRepository>${release.repository}</releaseDeploymentRepository>
                     <stageDeploymentRepository>${stage.repository}</stageDeploymentRepository>
                     <snapshotDeploymentRepository>${snapshot.repository}</snapshotDeploymentRepository>
-                    <tag>${project.artifactId}-${project.version}</tag>
                 </configuration>
                 <executions>
                     <execution>
@@ -60,18 +59,14 @@ The above tasks can be enabled on your build by:
                 </executions>
             </plugin>
         </plugins>
-        
         ...
-        
         <extensions>
             <extension>
                 <groupId>com.e-gineering</groupId>
                 <artifactId>gitflow-helper-maven-plugin</artifactId>
                 <version>${gitflow.helper.plugin.version}</version>
             </extension>
-            
             ...
-            
         </extensions>
     </build>
 ...
