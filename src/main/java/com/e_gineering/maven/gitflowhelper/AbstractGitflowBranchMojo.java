@@ -43,8 +43,8 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     private String developmentBranchPattern;
 
     // @Parameter tag causes property resolution to fail for patterns containing ${env.}. Default provided in execute();
-    @Parameter(property = "gitBranchProperty", required = false)
-    private String gitBranchProperty;
+    @Parameter(property = "gitBranchExpression", required = false)
+    private String gitBranchExpression;
 
     protected abstract void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException;
 
@@ -67,8 +67,8 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     }
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        if (gitBranchProperty == null) {
-            gitBranchProperty = "${env.GIT_BRANCH}";
+        if (gitBranchExpression == null) {
+            gitBranchExpression = "${env.GIT_BRANCH}";
         }
 
         try {
@@ -77,9 +77,9 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
             throw new MojoExecutionException("Unable to read System Envirionment Variables: ", ioe);
         }
 
-        // Try to resolve the gitBranchProperty to an actual Value...
-        String gitBranch = resolveExpression(gitBranchProperty);
-        if (StringUtils.isNotEmpty(gitBranch) && !gitBranch.equals(gitBranchProperty)) {
+        // Try to resolve the gitBranchExpression to an actual Value...
+        String gitBranch = resolveExpression(gitBranchExpression);
+        if (StringUtils.isNotEmpty(gitBranch) && !gitBranch.equals(gitBranchExpression)) {
             getLog().debug("Detected GIT_BRANCH: '" + gitBranch + "' in build environment.");
 
             /*

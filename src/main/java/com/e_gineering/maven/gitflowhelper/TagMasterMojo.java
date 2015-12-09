@@ -8,7 +8,6 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.codehaus.plexus.util.StringUtils;
 
 import static org.twdata.maven.mojoexecutor.MojoExecutor.*;
 
@@ -19,8 +18,8 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.*;
 public class TagMasterMojo extends AbstractGitflowBranchMojo {
 
     // @Parameter tag causes property resolution to fail for patterns containing ${env.}. Default provided in execute();
-    @Parameter(property = "gitURLProperty")
-    private String gitURLProperty;
+    @Parameter(property = "gitURLExpression")
+    private String gitURLExpression;
 
     @Parameter(defaultValue = "${project.version}", property = "tag", required = true)
     private String tag;
@@ -43,11 +42,11 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
     @Override
     protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
         if (type.equals(GitBranchType.MASTER)) {
-            if (gitURLProperty == null) {
-                gitURLProperty = "${env.GIT_URL}";
+            if (gitURLExpression == null) {
+                gitURLExpression = "${env.GIT_URL}";
             }
-            String gitURL = resolveExpression(gitURLProperty);
-            if (!gitURL.equals(gitURLProperty)) {
+            String gitURL = resolveExpression(gitURLExpression);
+            if (!gitURL.equals(gitURLExpression)) {
                 getLog().debug("Detected GIT_URL: '" + gitURL + "' in build environment.");
                 getLog().info("Invoking scm:tag for CI build matching branchPattern: [" + branchPattern + "]");
 
@@ -70,7 +69,7 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
                         )
                 );
             } else {
-                throw new MojoFailureException("Unable to resolve gitURLProperty: " + gitURLProperty + ". Leaving build configuration unaltered.");
+                throw new MojoFailureException("Unable to resolve gitURLExpression: " + gitURLExpression + ". Leaving build configuration unaltered.");
             }
         }
     }

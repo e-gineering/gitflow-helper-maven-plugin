@@ -35,9 +35,9 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
             throw new MavenExecutionException("Unable to read System Envirionment Variables: ", ioe);
         }
 
-        // Look for a gitflow-helper-maven-plugin, so we can determine what the gitBranchProperty and masterBranchPattern are...
+        // Look for a gitflow-helper-maven-plugin, so we can determine what the gitBranchExpression and masterBranchPattern are...
         String masterBranchPattern = null;
-        String gitBranchProperty = null;
+        String gitBranchExpression = null;
         boolean pluginFound = false;
 
         // Build up a map of plugins to remove from projects, if we're on the master branch.
@@ -51,7 +51,7 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                 if (plugin.getKey().equals("com.e-gineering:gitflow-helper-maven-plugin")) {
                     pluginFound = true;
 
-                    logger.info("gitflow-helper-maven-plugin found in project: [" + project.getName() + "]");
+                    logger.debug("gitflow-helper-maven-plugin found in project: [" + project.getName() + "]");
 
                     if (masterBranchPattern == null) {
                         masterBranchPattern = extractMasterBranchPattern(plugin.getConfiguration());
@@ -60,10 +60,10 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                         }
                     }
 
-                    if (gitBranchProperty == null) {
-                        gitBranchProperty = extractGitBranchProperty(plugin.getConfiguration());
-                        for (int i = 0; i < plugin.getExecutions().size() && gitBranchProperty == null; i++) {
-                            gitBranchProperty = extractGitBranchProperty(plugin.getExecutions().get(i).getConfiguration());
+                    if (gitBranchExpression == null) {
+                        gitBranchExpression = extractGitBranchExpression(plugin.getConfiguration());
+                        for (int i = 0; i < plugin.getExecutions().size() && gitBranchExpression == null; i++) {
+                            gitBranchExpression = extractGitBranchExpression(plugin.getExecutions().get(i).getConfiguration());
                         }
                     }
 
@@ -80,36 +80,34 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
 
         if (pluginFound) {
             if (masterBranchPattern == null) {
-                logger.info("Using default master branch Pattern.");
+                logger.debug("Using default master branch Pattern.");
                 masterBranchPattern = "origin/master";
             }
-            logger.info("Master Branch Pattern: " + masterBranchPattern);
+            logger.debug("Master Branch Pattern: " + masterBranchPattern);
 
-            if (gitBranchProperty == null) {
-                logger.info("Using default gitBranchProperty.");
-                gitBranchProperty = "${env.GIT_BRANCH}";
+            if (gitBranchExpression == null) {
+                logger.debug("Using default gitBranchExpression.");
+                gitBranchExpression = "${env.GIT_BRANCH}";
             }
-            logger.info("Git Branch Property: " + gitBranchProperty);
+            logger.debug("Git Branch Expression: " + gitBranchExpression);
         }
 
         PropertyResolver pr = new PropertyResolver();
         // Generate a random unique key for the property expression.
         String gitBranchPropKey = UUID.randomUUID().toString();
-        session.getCurrentProject().getProperties().setProperty(gitBranchPropKey, gitBranchProperty);
+        session.getCurrentProject().getProperties().setProperty(gitBranchPropKey, gitBranchExpression);
         String gitBranch = pr.getPropertyValue(gitBranchPropKey, session.getCurrentProject().getProperties(), systemEnvVars);
-        if (!gitBranch.equals(gitBranchProperty)) {
-            logger.info("Resolved: " + gitBranchProperty + " to: " + gitBranch);
+        if (!gitBranch.equals(gitBranchExpression)) {
+            logger.debug("Resolved: " + gitBranchExpression + " to: " + gitBranch);
 
             // Test to see if the current GIT_BRANCH matches the masterBranchPattern...
             if (gitBranch.matches(masterBranchPattern)) {
-                logger.info("gitflow-helper-maven-plugin: GIT_BRANCH: [" + gitBranch + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
+                logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + gitBranch + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
 
                 for (MavenProject project : session.getProjects()) {
                     // Drop all the plugins from the build except for the gitflow-helper-maven-plugin.
                     project.getBuildPlugins().removeAll(pluginsToDrop.get(project));
                 }
-
-                logger.info("Overriding build lifecycle plugins for promotion build.");
             }
         }
     }
@@ -122,9 +120,9 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
         return null;
     }
 
-    private String extractGitBranchProperty(Object configuration) {
+    private String extractGitBranchExpression(Object configuration) {
         try {
-            return ((Xpp3Dom) configuration).getChild("gitBranchProperty").getValue();
+            return ((Xpp3Dom) configuration).getChild("gitBranchExpression").getValue();
         } catch (Exception ex) {
         }
         return null;
