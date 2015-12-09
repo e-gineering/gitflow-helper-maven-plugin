@@ -1,6 +1,6 @@
 # gitflow-helper-maven-plugin [![Build Status](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin.svg?branch=master)](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin)
 
-A build extension and plugin that makes Maven work with gitflow projects and CI servers.
+A build extension and plugin that helps Maven play nicely with gitflow projects, CI servers and local development.
 
 It does so by:
 
