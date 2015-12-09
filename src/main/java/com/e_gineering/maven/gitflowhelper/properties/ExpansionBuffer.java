@@ -21,7 +21,7 @@ package com.e_gineering.maven.gitflowhelper.properties;
 /**
  * Shamelessly cribbed from https://raw.githubusercontent.com/mojohaus/properties-maven-plugin/master/src/main/java/org/codehaus/mojo/properties/ExpansionBuffer.java
  */
-class ExpansionBuffer {
+public class ExpansionBuffer {
     private final StringBuilder resolved = new StringBuilder();
 
     private String unresolved;

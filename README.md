@@ -176,7 +176,13 @@ In a gitflow environment, a commit to a master branch should trigger a job to bu
  
 The `tag-master` goal executes the [maven-scm-plugin tag goal](https://maven.apache.org/scm/maven-scm-plugin/tag-mojo.html) when the 
 `gitBranchExpression` resolves to a value matching the `masterBranchPattern` regular expression. To determine the SCM URL to use, the `gitURLExpression`
-is evaluated at run-time. The default expression, `${env.GIT_URL}`, is used by Jenkins & Hudson. To resolve the `<developerConnection>` in an `<scm>` block in your pom, you could use `${project.scm.developerConnection}`.
+is evaluated at run-time. The default expression, `${env.GIT_URL}`, is provided by Jenkins & Hudson. 
+
+To resolve the `<developerConnection>` in an `<scm>` block in your pom, you can specify the following in your plugin configuration:
+
+```
+<gitURLExpression>${project.scm.developerConnection}</gitURLExpression>
+```
 
 The following properties can be configured for this goal:
 

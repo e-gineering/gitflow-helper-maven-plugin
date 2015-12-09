@@ -1,5 +1,6 @@
 package com.e_gineering.maven.gitflowhelper;
 
+import com.e_gineering.maven.gitflowhelper.properties.ExpansionBuffer;
 import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -55,10 +56,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
      * @return
      */
     protected String resolveExpression(final String expression) {
-        String propKey = UUID.randomUUID().toString();
-        project.getProperties().setProperty(propKey, expression);
-
-        return resolver.getPropertyValue(propKey, project.getProperties(), systemEnvVars);
+        return resolver.resolveValue(expression, project.getProperties(), systemEnvVars);
     }
 
     private void logExecute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
@@ -79,9 +77,9 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
 
         // Try to resolve the gitBranchExpression to an actual Value...
         String gitBranch = resolveExpression(gitBranchExpression);
-        if (StringUtils.isNotEmpty(gitBranch) && !gitBranch.equals(gitBranchExpression)) {
-            getLog().debug("Detected GIT_BRANCH: '" + gitBranch + "' in build environment.");
-
+        ExpansionBuffer eb = new ExpansionBuffer(gitBranch);
+        getLog().info("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + gitBranch + "'");
+        if (!eb.hasMoreLegalPlaceholders()) {
             /*
              * /origin/master goes to the maven 'release' repo.
              * /origin/release/.* , /origin/hotfix/.* , and /origin/bugfix/.* go to the maven 'test' repo.
@@ -101,8 +99,6 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
             } else {
                 logExecute(GitBranchType.OTHER, gitBranch, null);
             }
-        } else {
-            getLog().debug("GIT_BRANCH Undefined. Build will continue as configured.");
         }
     }
 }

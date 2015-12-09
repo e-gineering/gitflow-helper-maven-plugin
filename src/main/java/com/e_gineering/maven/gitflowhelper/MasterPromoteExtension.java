@@ -93,21 +93,16 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
         }
 
         PropertyResolver pr = new PropertyResolver();
-        // Generate a random unique key for the property expression.
-        String gitBranchPropKey = UUID.randomUUID().toString();
-        session.getCurrentProject().getProperties().setProperty(gitBranchPropKey, gitBranchExpression);
-        String gitBranch = pr.getPropertyValue(gitBranchPropKey, session.getCurrentProject().getProperties(), systemEnvVars);
-        if (!gitBranch.equals(gitBranchExpression)) {
-            logger.debug("Resolved: " + gitBranchExpression + " to: " + gitBranch);
+        String gitBranch = pr.resolveValue(gitBranchExpression, session.getCurrentProject().getProperties(), systemEnvVars);
+        logger.info("Build Extension Resolved: " + gitBranchExpression + " to: " + gitBranch);
 
-            // Test to see if the current GIT_BRANCH matches the masterBranchPattern...
-            if (gitBranch.matches(masterBranchPattern)) {
-                logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + gitBranch + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
+        // Test to see if the current GIT_BRANCH matches the masterBranchPattern...
+        if (gitBranch.matches(masterBranchPattern)) {
+            logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + gitBranch + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
 
-                for (MavenProject project : session.getProjects()) {
-                    // Drop all the plugins from the build except for the gitflow-helper-maven-plugin.
-                    project.getBuildPlugins().removeAll(pluginsToDrop.get(project));
-                }
+            for (MavenProject project : session.getProjects()) {
+                // Drop all the plugins from the build except for the gitflow-helper-maven-plugin.
+                project.getBuildPlugins().removeAll(pluginsToDrop.get(project));
             }
         }
     }

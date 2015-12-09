@@ -48,6 +48,14 @@ public class PropertyResolver {
         CircularDefinitionPreventer circularDefinitionPreventer =
                 new CircularDefinitionPreventer().visited(key, value);
 
+        return resolveValue(buffer, circularDefinitionPreventer, properties, environment);
+    }
+
+    public String resolveValue(String value, Properties properties, Properties environment) {
+        return resolveValue(new ExpansionBuffer(value), new CircularDefinitionPreventer(), properties, environment);
+    }
+
+    private String resolveValue(ExpansionBuffer buffer, CircularDefinitionPreventer circularDefinitionPreventer, Properties properties, Properties environment) {
         while (buffer.hasMoreLegalPlaceholders()) {
             String newKey = buffer.extractPropertyKey();
             String newValue = fromPropertiesThenSystemThenEnvironment(newKey, properties, environment);
@@ -58,6 +66,7 @@ public class PropertyResolver {
         }
 
         return buffer.toString();
+
     }
 
     private String fromPropertiesThenSystemThenEnvironment(String key, Properties properties, Properties environment) {
