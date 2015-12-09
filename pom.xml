@@ -2,22 +2,59 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <prerequisites>
+        <maven>3.1</maven>
+    </prerequisites>
+
     <groupId>com.e-gineering</groupId>
     <artifactId>gitflow-helper-maven-plugin</artifactId>
+
     <version>1.0-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
 
     <name>jenkins-gitflow-helper-maven-plugin</name>
+    <description>A Plugin and Build Extension that helps Maven play nice with the gitflow workflow.</description>
 
     <url>https://github.com/egineering-llc/gitflow-helper-maven-plugin</url>
+
+    <organization>
+        <name>E-Gineering, LLC.</name>
+        <url>http://www.e-gineering.com</url>
+    </organization>
+
+    <issueManagement>
+        <url>https://github.com/egineering-llc/gitflow-helper-maven-plugin/issues</url>
+        <system>GitHub Issues</system>
+    </issueManagement>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/egineering-llc/gitflow-helper-maven-plugin</url>
+        <connection>scm:git:git://github.com/egineering-llc/gitflow-helper-maven-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:egineering-llc/gitflow-helper-maven-plugin.git</developerConnection>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <prerequisites>
-        <maven>3.1</maven>
-    </prerequisites>
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
     <dependencies>
         <dependency>
