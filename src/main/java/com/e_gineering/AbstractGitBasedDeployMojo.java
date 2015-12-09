@@ -2,16 +2,12 @@ package com.e_gineering;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
-import org.apache.maven.artifact.repository.ArtifactRepositoryPolicy;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.sonatype.aether.impl.ArtifactResolver;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -27,8 +23,8 @@ public abstract class AbstractGitBasedDeployMojo extends AbstractGitEnforcerMojo
     @Parameter(property = "releaseDeploymentRepository", required = true)
     protected String releaseDeploymentRepository;
 
-    @Parameter(property = "testDeploymentRepository", required = true)
-    protected String testDeploymentRepository;
+    @Parameter(property = "stageDeploymentRepository", required = true)
+    protected String stageDeploymentRepository;
 
     @Parameter(property = "snapshotDeploymentRepository", required = true)
     protected String snapshotDeploymentRepository;
@@ -39,12 +35,17 @@ public abstract class AbstractGitBasedDeployMojo extends AbstractGitEnforcerMojo
     @Component(role = ArtifactRepositoryLayout.class)
     private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
 
-    protected String gitBranch;
+    protected abstract void execute(final GitBranchType type) throws MojoExecutionException, MojoFailureException;
 
-    protected abstract void execute(GitBranchType type) throws MojoExecutionException, MojoFailureException;
+    private void logExecute(final GitBranchType type) throws MojoExecutionException, MojoFailureException {
+        if (!type.equals(GitBranchType.OTHER)) {
+            getLog().info("Building for " + type.name() + " git branch.");
+        }
+        execute(type);
+    }
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        gitBranch = System.getenv("GIT_BRANCH");
+        String gitBranch = System.getenv("GIT_BRANCH");
         if (gitBranch != null) {
             getLog().debug("Detected GIT_BRANCH: '" + gitBranch + "' in build environment.");
 
@@ -55,17 +56,17 @@ public abstract class AbstractGitBasedDeployMojo extends AbstractGitEnforcerMojo
              * All other builds will use the default semantics for 'deploy'.
              */
             if (gitBranch.matches(masterBranchPattern)) {
-                execute(GitBranchType.MASTER);
+                logExecute(GitBranchType.MASTER);
             } else if (gitBranch.matches(releaseBranchPattern)) {
-                execute(GitBranchType.RELEASE);
+                logExecute(GitBranchType.RELEASE);
             } else if (gitBranch.matches(hotfixBranchPattern)) {
-                execute(GitBranchType.HOTFIX);
+                logExecute(GitBranchType.HOTFIX);
             } else if (gitBranch.matches(bugfixBranchPattern)) {
-                execute(GitBranchType.BUGFIX);
+                logExecute(GitBranchType.BUGFIX);
             } else if (gitBranch.matches(developmentBranchPattern)) {
-                execute(GitBranchType.DEVELOPMENT);
+                logExecute(GitBranchType.DEVELOPMENT);
             } else {
-                execute(GitBranchType.OTHER);
+                logExecute(GitBranchType.OTHER);
             }
         } else {
             getLog().debug("GIT_BRANCH Undefined. Build will continue as configured.");

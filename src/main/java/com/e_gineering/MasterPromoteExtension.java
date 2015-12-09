@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * Maven extension which removes (skips) undesired plugins from the build reactor when running on a master branch.
- *
+ * <p/>
  * Essentially, enables using the master branch as a 'promotion' branch.
  */
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "promote-master")
@@ -41,6 +41,7 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                 List<Plugin> dropPlugins = new ArrayList<Plugin>();
 
                 for (Plugin plugin : project.getBuildPlugins()) {
+                    // Don't drop our plugin. Read it's config.
                     if (plugin.getKey().equals("com.e-gineering:gitflow-helper-maven-plugin")) {
                         pluginFound = true;
 
@@ -52,6 +53,9 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                                 masterBranchPattern = extractMasterBranchPattern(plugin.getExecutions().get(i).getConfiguration());
                             }
                         }
+                        // Don't drop the maven-deploy-plugin. Read it's config.
+                    } else if (plugin.getKey().equals("org.apache.maven.plugins:maven-deploy-plugin")) {
+                        logger.debug("gitflow-helper-maven-plugin removing plugin: " + plugin + " from project: " + project.getName());
                     } else {
                         dropPlugins.add(plugin);
                     }
@@ -86,8 +90,9 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
 
     private String extractMasterBranchPattern(Object configuration) {
         try {
-            return ((Xpp3Dom)configuration).getChild("masterBranchPattern").getValue();
-        } catch (Exception ex) { }
+            return ((Xpp3Dom) configuration).getChild("masterBranchPattern").getValue();
+        } catch (Exception ex) {
+        }
         return null;
     }
 }
