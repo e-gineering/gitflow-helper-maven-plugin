@@ -25,8 +25,8 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
             getLog().debug("Versioned Branch Type: " + type + " with branchPattern: " + branchPattern + " Checking against current branch: " + gitBranch);
             Matcher gitMatcher = Pattern.compile(branchPattern).matcher(gitBranch);
 
-            // Expecting a maven pom with a non-SNAPSHOT version.
-            if (gitMatcher != null) {
+            // We're in a release branch, we expect a non-SNAPSHOT version in the POM.
+            if (gitMatcher.matches()) {
                 if (ArtifactUtils.isSnapshot(project.getVersion())) {
                     throw new MojoFailureException("The current git branch: [" + gitBranch + "] is defined as a release branch. The maven project version: [" + project.getVersion() + "] is currently a snapshot version.");
                 }
@@ -37,13 +37,11 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
                         throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to be: [" + gitMatcher.group(1).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
                     }
                 }
-            } else { // No branches matched. This should be a -SNAPSHOT.
-                if (!ArtifactUtils.isSnapshot(project.getVersion())) {
-                    throw new MojoFailureException("Builds from non-release git branches must end with -SNAPSHOT");
-                }
             }
-        } else {
-            getLog().info("No GIT_BRANCH in build environment. Ignoring assertions for git branch version semantics.");
+        } else { // Unversioned branch type. Must be -SNAPSHOT.
+            if (!ArtifactUtils.isSnapshot(project.getVersion())) {
+                throw new MojoFailureException("Builds from non-release git branches must end with -SNAPSHOT");
+            }
         }
     }
 }
