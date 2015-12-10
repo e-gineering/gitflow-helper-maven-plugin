@@ -22,6 +22,13 @@
         <url>http://www.e-gineering.com</url>
     </organization>
 
+    <developers>
+        <developer>
+            <name>Bryan Varner</name>
+            <email>bryan.varner@e-gineering.com</email>
+        </developer>
+    </developers>
+
     <issueManagement>
         <url>https://github.com/egineering-llc/gitflow-helper-maven-plugin/issues</url>
         <system>GitHub Issues</system>
