@@ -1,4 +1,4 @@
-package com.e_gineering;
+package com.e_gineering.maven.gitflowhelper;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -30,7 +30,7 @@ import java.util.List;
  * Set the target repository for deployment based upon the GIT_BRANCH being built.
  */
 @Mojo(name = "promote-master", defaultPhase = LifecyclePhase.INSTALL)
-public class PromoteMasterMojo extends AbstractGitBasedDeployMojo {
+public class PromoteMasterMojo extends AbstractGitflowBasedRepositoryMojo {
 
     @Component
     private ArtifactResolver artifactResolver;
@@ -49,7 +49,7 @@ public class PromoteMasterMojo extends AbstractGitBasedDeployMojo {
     private MavenProjectHelper projectHelper;
 
     @Override
-    protected void execute(final GitBranchType type) throws MojoExecutionException, MojoFailureException {
+    protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
         switch (type) {
             case MASTER: {
                 getLog().info("Attaching existing artifacts from stageDeploymentRepository [" + stageDeploymentRepository + "]");

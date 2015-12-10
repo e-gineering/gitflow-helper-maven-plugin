@@ -1,7 +1,7 @@
-package com.e_gineering;
+package com.e_gineering.maven.gitflowhelper;
 
+import com.e_gineering.maven.gitflowhelper.properties.ExpansionBuffer;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.Scm;
 import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -13,11 +13,14 @@ import org.apache.maven.plugins.annotations.Parameter;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.*;
 
 /**
- * Invokes configures the builds SCM settings based on environment variables from a CI Server, and does an scm:tag
- * If the env.GIT_BRANCH matches the masterBranchPattern.
+ * Invokes configures the builds SCM settings based on environment variables from a CI Server, and does an scm:tag for builds from Master.
  */
-@Mojo(name = "tag-master", defaultPhase = LifecyclePhase.DEPLOY)
-public class TagMasterMojo extends AbstractGitEnforcerMojo {
+@Mojo(name = "tag-master", defaultPhase = LifecyclePhase.INSTALL)
+public class TagMasterMojo extends AbstractGitflowBranchMojo {
+
+    // @Parameter tag causes property resolution to fail for patterns containing ${env.}. Default provided in execute();
+    @Parameter(property = "gitURLExpression")
+    private String gitURLExpression;
 
     @Parameter(defaultValue = "${project.version}", property = "tag", required = true)
     private String tag;
@@ -37,16 +40,17 @@ public class TagMasterMojo extends AbstractGitEnforcerMojo {
     @Component
     private BuildPluginManager pluginManager;
 
-    public void execute() throws MojoFailureException, MojoExecutionException {
-        String gitBranch = System.getenv("GIT_BRANCH");
-        String gitURL = System.getenv("GIT_URL");
-
-        if (gitBranch != null && gitURL != null) {
-            getLog().debug("Detected GIT_BRANCH: '" + gitBranch + "' in build environment.");
-            getLog().debug("Detected GIT_URL: '" + gitURL + "' in build environment.");
-
-            if (gitBranch.matches(masterBranchPattern)) {
-                getLog().info("Invoking scm:tag for CI build matching masterBranchPattern: [" + masterBranchPattern + "]");
+    @Override
+    protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
+        if (type.equals(GitBranchType.MASTER)) {
+            if (gitURLExpression == null) {
+                gitURLExpression = "${env.GIT_URL}";
+            }
+            String gitURL = resolveExpression(gitURLExpression);
+            getLog().info("gitURLExpression: '" + gitURLExpression + "' resolved to: '" + gitURL + "'");
+            ExpansionBuffer eb = new ExpansionBuffer(gitURL);
+            if (!eb.hasMoreLegalPlaceholders()) {
+                getLog().info("Invoking scm:tag for CI build matching branchPattern: [" + branchPattern + "]");
 
                 // Use the execute mojo to run the maven-scm-plugin...
                 executeMojo(
@@ -67,10 +71,8 @@ public class TagMasterMojo extends AbstractGitEnforcerMojo {
                         )
                 );
             } else {
-                getLog().debug("CI build from a non-master branch. Leaving build configuration unaltered.");
+                throw new MojoFailureException("Unable to resolve gitURLExpression: " + gitURLExpression + ". Leaving build configuration unaltered.");
             }
-        } else {
-            getLog().debug("CI git environment variables unset or missing. Leaving build configuration unaltered.");
         }
     }
 }
