@@ -1,4 +1,4 @@
-package com.e_gineering;
+package com.e_gineering.maven.gitflowhelper;
 
 /**
  * Enum for different types of Git Branches...

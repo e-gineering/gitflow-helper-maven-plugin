@@ -1,4 +1,4 @@
-package com.e_gineering;
+package com.e_gineering.maven.gitflowhelper;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.BuildPluginManager;
@@ -13,22 +13,24 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.impl.ArtifactResolver;
+import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
+import java.io.File;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.twdata.maven.mojoexecutor.MojoExecutor.*;
-
 /**
  * Set the target repository for deployment based upon the GIT_BRANCH being built.
  */
-@Mojo(name = "promote-master", defaultPhase = LifecyclePhase.DEPLOY)
-public class PromoteMasterMojo extends AbstractGitBasedDeployMojo {
+@Mojo(name = "promote-master", defaultPhase = LifecyclePhase.INSTALL)
+public class PromoteMasterMojo extends AbstractGitflowBasedRepositoryMojo {
 
     @Component
     private ArtifactResolver artifactResolver;
@@ -47,12 +49,12 @@ public class PromoteMasterMojo extends AbstractGitBasedDeployMojo {
     private MavenProjectHelper projectHelper;
 
     @Override
-    protected void execute(final GitBranchType type) throws MojoExecutionException, MojoFailureException {
+    protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
         switch (type) {
             case MASTER: {
-                getLog().info("Building from master branch. Attempting to resolve tested artifacts from [" + testDeploymentRepository + "]");
+                getLog().info("Attaching existing artifacts from stageDeploymentRepository [" + stageDeploymentRepository + "]");
 
-                List<RemoteRepository> remoteRepositories = Arrays.asList(getRepository(testDeploymentRepository));
+                List<RemoteRepository> remoteRepositories = Arrays.asList(getRepository(stageDeploymentRepository));
 
                 // A place to store our resolved files...
                 List<ArtifactResult> resolvedArtifacts = new ArrayList<ArtifactResult>();
@@ -61,12 +63,33 @@ public class PromoteMasterMojo extends AbstractGitBasedDeployMojo {
                 // Build up a set of ArtifactRequests, for the pom, the current packaging layout, the -sources.jar and the -javadoc.jar and the
                 List<ArtifactRequest> requiredArtifacts = new ArrayList<ArtifactRequest>();
 
+
+                // Keep track of the original base directory.
+                getLog().info("Disabling local repository @ " + session.getLocalRepository().getBasedir());
+                Field localBaseDir = null;
+                File originalBaseDir = session.getLocalRepositoryManager().getRepository().getBasedir();
+
+                // Disable the local repository.
+                try {
+                    localBaseDir = LocalRepository.class.getDeclaredField("basedir");
+                    localBaseDir.setAccessible(true);
+
+                    // Generate a new temp directory.
+                    File tempRepo = Files.createTempDirectory("gitflow-helper-maven-plugin-repo").toFile();
+                    tempRepo.deleteOnExit();
+
+                    getLog().info("Using temporary local repository @ " + tempRepo.getAbsolutePath());
+                    localBaseDir.set(session.getLocalRepositoryManager().getRepository(), tempRepo);
+                } catch (Exception ex) {
+                    getLog().warn("Failed to disable local repository path.", ex);
+                }
+
                 // This is required!
                 requiredArtifacts.add(new ArtifactRequest(new DefaultArtifact(project.getGroupId(), project.getArtifactId(), project.getPackaging(), project.getVersion()), remoteRepositories, null));
                 try {
                     resolvedArtifacts.addAll(artifactResolver.resolveArtifacts(session, requiredArtifacts));
                 } catch (ArtifactResolutionException are) {
-                    throw new MojoExecutionException("Failed to resolve the required project files from the testDeploymentRepository", are);
+                    throw new MojoExecutionException("Failed to resolve the required project files from the stageDeploymentRepository", are);
                 }
 
                 // Optional Artifacts... We do these one at a time so we don't fail the build....
@@ -94,26 +117,16 @@ public class PromoteMasterMojo extends AbstractGitBasedDeployMojo {
                     }
                 }
 
-                // Invoke the Deploy task to attach the resolved (and attached to this build) artifacts.
-                executeMojo(
-                        plugin(
-                                groupId("org.apache.maven.plugins"),
-                                artifactId("maven-deploy-plugin"),
-                                version("2.8.2")
-                        ),
-                        goal("deploy"),
-                        configuration(),
-                        executionEnvironment(
-                                project,
-                                mavenSession,
-                                pluginManager
-                        )
-                );
+                // Restore the local repository.
+                try {
+                    localBaseDir.set(session.getLocalRepositoryManager().getRepository(), originalBaseDir);
+                    localBaseDir.setAccessible(false);
+                } catch (Exception ex) {
+                    getLog().warn("Failed to restore original local repository path.", ex);
+                }
+
 
                 break;
-            }
-            default: {
-                getLog().debug("Building from non-master branch [" + gitBranch + "]. Build will continue as configured.");
             }
         }
     }
