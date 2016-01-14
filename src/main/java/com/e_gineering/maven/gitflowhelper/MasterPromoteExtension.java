@@ -90,19 +90,20 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                 gitBranchExpression = "${env.GIT_BRANCH}";
             }
             logger.debug("Git Branch Expression: " + gitBranchExpression);
-        }
 
-        PropertyResolver pr = new PropertyResolver();
-        String gitBranch = pr.resolveValue(gitBranchExpression, session.getCurrentProject().getProperties(), systemEnvVars);
-        logger.info("Build Extension Resolved: " + gitBranchExpression + " to: " + gitBranch);
 
-        // Test to see if the current GIT_BRANCH matches the masterBranchPattern...
-        if (gitBranch.matches(masterBranchPattern)) {
-            logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + gitBranch + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
+            PropertyResolver pr = new PropertyResolver();
+            String gitBranch = pr.resolveValue(gitBranchExpression, session.getCurrentProject().getProperties(), systemEnvVars);
+            logger.info("Build Extension Resolved: " + gitBranchExpression + " to: " + gitBranch);
 
-            for (MavenProject project : session.getProjects()) {
-                // Drop all the plugins from the build except for the gitflow-helper-maven-plugin.
-                project.getBuildPlugins().removeAll(pluginsToDrop.get(project));
+            // Test to see if the current GIT_BRANCH matches the masterBranchPattern...
+            if (gitBranch != null && gitBranch.matches(masterBranchPattern)) {
+                logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + gitBranch + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
+
+                for (MavenProject project : session.getProjects()) {
+                    // Drop all the plugins from the build except for the gitflow-helper-maven-plugin.
+                    project.getBuildPlugins().removeAll(pluginsToDrop.get(project));
+                }
             }
         }
     }
