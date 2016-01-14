@@ -8,12 +8,10 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 
 import java.io.IOException;
 import java.util.Properties;
-import java.util.UUID;
 
 /**
  * Abstracts Per-Branch builds & Logging
@@ -78,7 +76,11 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
         // Try to resolve the gitBranchExpression to an actual Value...
         String gitBranch = resolveExpression(gitBranchExpression);
         ExpansionBuffer eb = new ExpansionBuffer(gitBranch);
-        getLog().info("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + gitBranch + "'");
+
+        if (!gitBranchExpression.equals(gitBranch) || getLog().isDebugEnabled()) { // Resolves Issue #9
+            getLog().info("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + gitBranch + "'");
+        }
+
         if (!eb.hasMoreLegalPlaceholders()) {
             /*
              * /origin/master goes to the maven 'release' repo.
