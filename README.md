@@ -9,6 +9,7 @@ It does so by:
     * Setting distributionManagement repositories (for things like [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/)) based upon the current git branch.
     * SCM tagging builds for the master branch, using the CI server's repository connection information. (Zero Maven scm configuration necessary)
     * Promoting existing tested (staged) artifacts for release, rather than re-building the artifacts. Eliminates the risk of accidental master merges or commits resulting in untested code being released, and provides digest hash traceability for the history of artifacts.
+    * Enabling the decoupling of repository deployment and execution environment delivery based on the current git branch.
  * Automated deployment, promotion, and delivery of projects without the [maven-release-plugin](http://maven.apache.org/maven-release/maven-release-plugin/) or some other [*almost there* solution](https://axelfontaine.com/blog/final-nail.html).
 
 # Why would I want to use this?
@@ -19,6 +20,7 @@ This plugin solves a few specific issues common in consolidated Hudson/Jenkins C
  2. Enable the maven-deploy-plugin to target a snapshots, test-releases, and releases repository.
  3. _Copy_ (rather than rebuild) the tested artifacts from the test-releases repository to the release repository, without doing a full project rebuild from the master branch.
  4. Reliably tag deploy builds from the 'master' branch
+ 5. Enable split 'deploy' vs. 'deliver' maven CI job configuration, without rebuilding artifacts for the 'deliver' phase.
  
 In addition to supporting these goals for the project, this plugin does it in a manner that tries to be as effortless (yet configurable) as possible.
 If you use non-standard gitflow branch names (emer instead of hotfix), this plugin supports that. If you don't want to do version enforcement, this plugin supports that. 
@@ -223,3 +225,50 @@ This goal resolves (and downloads) the artifacts matching the current `${project
 current project in the Maven build. This lets later plugins in the lifecycle (like the deploy plugin, which the extension won't remove) make use of 
 artifacts provided from the stage repository when it uploads to the releases repository. Effectively, this makes a build in master copy the artifacts from 
 the stage repository to the releases repository.
+
+
+## Goal: `attach-deployed` (Deliver already Deployed artifacts)
+
+In some cases it is not advantageous to have instantaneous delivery of deployed artifacts into execution environments.
+The Maven lifecycle has no concept of this. The manner in which traditional 'deploy' (really, delivery) plugins deliver 
+new artifacts to execution enviornments overlaps with the 'deploy' to a binary artifact repository. The overlap of these
+two operations into a single Maven lifecycle phase represents a conflict of interest when attempting to deliver already
+deployed artifacts without re-building the artifacts at the time of delivery. Within the context of auditing deployed 
+artifact providence, this is a 'bad thing'.
+
+The `attach-deployed` goal will execute a clean, resolve previously built artifacts appropriate for the git branch 
+being built, attach the artifacts to the project, and place them in the `/target` directory as part of the Maven
+package phase.
+
+The following table describes the git branch expression -> repository used for resolving prebuilt artifact mapping.
+ 
+ | Git Branch Expression | Repository |
+ | --------------------- | ---------- |
+ | masterBranchPattern   | release    |
+ | releaseBranchPattern  | stage      |
+ | hotfixBranchPattern   | stage      |
+ | bugfixBranchPattern   | stage      |
+ | developmentBranchPattern | snapshots | 
+ | All Others            | local      |
+ 
+As an example, assume you have two CI jobs. 
+
+ * One which builds and deploys (to an artifact repository) the project for each commit.
+ * Another which is manually triggered, takes a branch as a user-input parameter, and delivers that branch to the proper
+   execution environment.
+   
+ The first job would likely run the following maven goals:
+    `mvn clean deploy`
+    
+ The second job could then run these maven goals:
+    `mvn gitflow-helper:attach-deploy jboss-as:deploy-only`
+    
+The effect would be that the first job builds, and pushes binaries to the proper artifact repository.
+The second job would have a clean workspace, with the proper version of the project defined by the pom.xml in the branch
+it's building. The attach-deploy will 'clean' the maven project, then download the binary artifacts from the repository
+that the first build deployed into. Once they're attached to the project, the `jboss-as:deploy-only` goal will deliver
+the artifacts built by the first job into a jboss application server.
+
+
+ 
+

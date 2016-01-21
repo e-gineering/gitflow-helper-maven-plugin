@@ -26,12 +26,9 @@ public class AttachDeployedArtifactsMojo extends AbstractGitflowBasedRepositoryM
                 attachExistingArtifacts(releaseDeploymentRepository, true);
                 break;
             }
-            case RELEASE: {
-                getLog().info("Attaching artifacts from stage repository...");
-                attachExistingArtifacts(stageDeploymentRepository, true);
-                break;
-            }
-            case HOTFIX: {
+            case RELEASE:
+            case HOTFIX:
+            case BUGFIX: {
                 getLog().info("Attaching artifacts from stage repository...");
                 attachExistingArtifacts(stageDeploymentRepository, true);
                 break;
