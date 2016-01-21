@@ -84,7 +84,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
         if (!eb.hasMoreLegalPlaceholders()) {
             /*
              * /origin/master goes to the maven 'release' repo.
-             * /origin/release/.* , /origin/hotfix/.* , and /origin/bugfix/.* go to the maven 'test' repo.
+             * /origin/release/.* , /origin/hotfix/.* , and /origin/bugfix/.* go to the maven 'stage' repo.
              * /origin/development goes to the 'snapshot' repo.
              * All other builds will use the default semantics for 'deploy'.
              */
