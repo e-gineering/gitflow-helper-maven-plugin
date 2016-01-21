@@ -101,6 +101,8 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
             } else {
                 logExecute(GitBranchType.OTHER, gitBranch, null);
             }
+        } else {
+            logExecute(GitBranchType.OTHER, gitBranch, null);
         }
     }
 }
