@@ -241,15 +241,15 @@ being built, attach the artifacts to the project, and place them in the `/target
 package phase.
 
 The following table describes the git branch expression -> repository used for resolving prebuilt artifact mapping.
- 
- | Git Branch Expression | Repository |
- | --------------------- | ---------- |
- | masterBranchPattern   | release    |
- | releaseBranchPattern  | stage      |
- | hotfixBranchPattern   | stage      |
- | bugfixBranchPattern   | stage      |
- | developmentBranchPattern | snapshots | 
- | All Others            | local      |
+
+| Git Branch Expression | Repository |
+| --------------------- | ---------- |
+| masterBranchPattern   | release    |
+| releaseBranchPattern  | stage      |
+| hotfixBranchPattern   | stage      |
+| bugfixBranchPattern   | stage      |
+| developmentBranchPattern | snapshots | 
+| All Others            | local      |
  
 As an example, assume you have two CI jobs. 
 
