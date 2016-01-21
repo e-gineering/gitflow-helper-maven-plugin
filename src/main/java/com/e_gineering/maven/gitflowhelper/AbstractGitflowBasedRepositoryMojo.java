@@ -161,12 +161,18 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
             }
         }
 
-        // This is required!
-        requiredArtifacts.add(new ArtifactRequest(new DefaultArtifact(project.getGroupId(), project.getArtifactId(), project.getPackaging(), project.getVersion()), remoteRepositories, null));
+        // Adjust for archetypes...
+        String packaging = project.getPackaging();
+        if (project.getPackaging().equalsIgnoreCase("maven-archetype")) {
+            packaging = "jar";
+        }
+
+        // This artifact is required!
+        requiredArtifacts.add(new ArtifactRequest(new DefaultArtifact(project.getGroupId(), project.getArtifactId(), packaging, project.getVersion()), remoteRepositories, null));
         try {
             resolvedArtifacts.addAll(artifactResolver.resolveArtifacts(session, requiredArtifacts));
         } catch (ArtifactResolutionException are) {
-            throw new MojoExecutionException("Failed to resolve the required project files from the stageDeploymentRepository", are);
+            throw new MojoExecutionException("Failed to resolve the required project files from: " + sourceRepository, are);
         }
 
         // Optional Artifacts... We do these one at a time so we don't fail the build....
@@ -179,11 +185,13 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
             try {
                 resolvedArtifacts.add(artifactResolver.resolveArtifact(session, optionalArtifacts.get(i)));
             } catch (ArtifactResolutionException are) {
-                getLog().info("Optional Artifact not found: " + optionalArtifacts.get(i).getArtifact());
+                if (getLog().isDebugEnabled()) {
+                    getLog().debug("Optional Artifact not found: " + optionalArtifacts.get(i).getArtifact());
+                }
             }
         }
 
-        getLog().info("Resolved: " + resolvedArtifacts.size() + " artifacts.");
+        getLog().info("Attached " + resolvedArtifacts.size() + " previously built artifacts.");
 
         for (int i = 0; i < resolvedArtifacts.size(); i++) {
             Artifact artifact = resolvedArtifacts.get(i).getArtifact();
