@@ -43,7 +43,7 @@ All of the solutions to these issues are implemented independently in different 
                 <groupId>com.e-gineering</groupId>
                 <artifactId>gitflow-helper-maven-plugin</artifactId>
                 <version>${gitflow.helper.plugin.version}</version>
-		<extensions>true</extensions>
+                <extensions>true</extensions>
                 <configuration>
                     <!-- These repository definitions expect id::layout::url::unique, for example
                          release::default::https://some.server.path/content/repositories/test-releases::false
@@ -224,10 +224,10 @@ the stage repository to the releases repository.
 
 In some cases it is not advantageous to have instantaneous delivery of deployed artifacts into execution environments.
 The Maven lifecycle has no concept of this. The manner in which traditional 'deploy' (really, delivery) plugins deliver 
-new artifacts to execution enviornments overlaps with the 'deploy' to a binary artifact repository. The overlap of these
+new artifacts to execution environments overlaps with the 'deploy' to a binary artifact repository. The overlap of these
 two operations into a single Maven lifecycle phase represents a conflict of interest when attempting to deliver already
 deployed artifacts without re-building the artifacts at the time of delivery. Within the context of auditing deployed 
-artifact providence, this is a 'bad thing'.
+artifact provenance, this is a 'bad thing'.
 
 The `attach-deployed` goal will execute a clean, resolve previously built artifacts appropriate for the git branch 
 being built, attach the artifacts to the project, and place them in the `/target` directory as part of the Maven
@@ -235,14 +235,14 @@ package phase.
 
 The following table describes the git branch expression -> repository used for resolving prebuilt artifact mapping.
  
- | Git Branch Expression | Repository |
- | --------------------- | ---------- |
- | masterBranchPattern   | release    |
- | releaseBranchPattern  | stage      |
- | hotfixBranchPattern   | stage      |
- | bugfixBranchPattern   | stage      |
- | developmentBranchPattern | snapshots | 
- | All Others            | local      |
+| Git Branch Expression | Source Repository for re-attachment |
+| --------------------- | ---------- |
+| masterBranchPattern   | release    |
+| releaseBranchPattern  | stage      |
+| hotfixBranchPattern   | stage      |
+| bugfixBranchPattern   | stage      |
+| developmentBranchPattern | snapshots | 
+| All Others            | local      |
  
 As an example, assume you have two CI jobs. 
 
