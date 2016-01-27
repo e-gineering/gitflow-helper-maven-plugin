@@ -226,7 +226,7 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
             if (disableLocal == true) {
                 throw new MojoExecutionException("Cannot resolve artifacts from 'null' repository if the local repository is also disabled.");
             }
-            getLog().debug("Attaching existing artifacts from local repository only.");
+            getLog().debug("Resolving existing artifacts from local repository only.");
         } else {
             // Add the remote repository.
             remoteRepositories.addAll(Arrays.asList(getRepository(sourceRepository)));
@@ -239,7 +239,7 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
         Field localBaseDir = null;
         File originalBaseDir = session.getLocalRepositoryManager().getRepository().getBasedir();
 
-        // Disable the local repository.
+        // Disable the local repository - using a bit of reflection that I wish we didn't need to use.
         File tempRepo = null;
         if (disableLocal) {
             getLog().info("Disabling local repository @ " + session.getLocalRepository().getBasedir());
@@ -322,7 +322,7 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
             }
         }
 
-        // Restore the local repository.
+        // Restore the local repository, again using reflection.
         if (disableLocal) {
             try {
                 localBaseDir.set(session.getLocalRepositoryManager().getRepository(), originalBaseDir);
