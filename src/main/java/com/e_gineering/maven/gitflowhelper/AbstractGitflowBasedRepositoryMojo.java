@@ -8,8 +8,8 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProjectHelper;
+import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.impl.ArtifactResolver;
 import org.eclipse.aether.repository.LocalRepository;
@@ -18,8 +18,16 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,8 +52,11 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
     @Parameter(property = "snapshotDeploymentRepository", required = true)
     protected String snapshotDeploymentRepository;
 
-    @Parameter(defaultValue = "${repositorySystemSession}")
+    @Parameter(defaultValue = "${repositorySystemSession}", required = true)
     private RepositorySystemSession session;
+
+    @Parameter(defaultValue = "${project.build.directory}", required = true)
+    protected File buildDirectory;
 
     @Component
     protected ArtifactRepositoryFactory repositoryFactory;
@@ -62,6 +73,7 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
     /**
      * Builds an ArtifactRepository for targeting deployments
      * .
+     *
      * @param altRepository
      * @return
      * @throws MojoExecutionException
@@ -109,10 +121,99 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
         return new RemoteRepository.Builder(id, layout, url).build();
     }
 
+    private String getCoordinates(ArtifactResult result) {
+        StringBuilder buffer = new StringBuilder( 128 );
+        buffer.append( result.getArtifact().getGroupId() );
+        buffer.append( ':' ).append( result.getArtifact().getArtifactId() );
+        buffer.append( ':' ).append( result.getArtifact().getExtension() );
+        if ( result.getArtifact().getClassifier().length() > 0 )
+        {
+            buffer.append( ':' ).append( result.getArtifact().getClassifier() );
+        }
+        buffer.append( ':' ).append( result.getArtifact().getBaseVersion() );
+        return buffer.toString();
+    }
+
+    private String getCoordinates(org.apache.maven.artifact.Artifact artifact) {
+        StringBuilder result = new StringBuilder();
+
+        getLog().debug("   Encoding Coordinates For: " + artifact);
+
+        // Get the extension according to the artifact type.
+        String extension = session.getArtifactTypeRegistry().get(artifact.getType()).getExtension();
+
+        // assert that the file extension matches the artifact packaging extension type, if there is an artifact file.
+        if (artifact.getFile() != null && !artifact.getFile().getName().toLowerCase().endsWith(extension.toLowerCase())) {
+            String fileExtension = artifact.getFile().getName().substring(artifact.getFile().getName().lastIndexOf('.') + 1);
+            getLog().warn("    Artifact file name: " + artifact.getFile().getName() + " of type " +
+                    artifact.getType() + " does not match the extension for the ArtifactType: " + extension + ". " +
+                    "This is likely an issue with the packaging definition for '" + artifact.getType() + "' artifacts, which may be missing an extension definition. " +
+                    "The gitflow helper catalog will use the actual file extension: " + fileExtension);
+            extension = fileExtension;
+        }
+
+        // group:artifact:extension
+        result.append(project.getGroupId()).append(":").append(project.getArtifactId()).append(":").append(extension);
+        if (artifact.hasClassifier()) {
+            // :classifier
+            result.append(":").append(artifact.getClassifier());
+        }
+        result.append(":").append(project.getVersion());
+
+        return result.toString().trim();
+    }
 
     /**
-     * Resolves artifacts from the given sourceRepository, and attaches them to the current
-     * build future downloading.
+     * Creates and attaches an artifact containing a list of attached artifacts, each line in the file contains
+     * group:artifact:type:classifier:version
+     */
+    protected void attachArtifactCatalog() throws MojoExecutionException {
+            getLog().info("Cataloging Artifacts for promotion & reattachment: " + project.getBuild().getDirectory());
+
+            File catalog = new File(buildDirectory, project.getArtifact().getArtifactId() + ".txt");
+
+            PrintWriter writer = null;
+
+            try {
+                catalog.delete();
+                buildDirectory.mkdirs();
+                writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(catalog), Charset.forName("UTF-8")));
+
+                if (project.getArtifact() != null && project.getArtifact().getFile() != null &&
+                        project.getArtifact().getFile().exists() && !project.getArtifact().getFile().isDirectory())
+                {
+                    String coords = getCoordinates(project.getArtifact());
+                    if (!coords.isEmpty()){
+                        getLog().info("Cataloging: " + coords);
+                        writer.println(coords);
+                    }
+                } else {
+                    getLog().info("No primary artifact to catalog, cataloging attached artifacts instead.");
+                }
+
+                // Iterate the attached artifacts.
+                for (org.apache.maven.artifact.Artifact artifact : project.getAttachedArtifacts()) {
+                    String coords = getCoordinates(artifact);
+                    if (!coords.isEmpty()) {
+                        getLog().info("Cataloging: " + coords);
+                        writer.println(coords);
+                    }
+                }
+
+                getLog().info("Attaching catalog artifact: " + catalog);
+                projectHelper.attachArtifact(project, "txt", "catalog", catalog);
+            } catch (IOException ioe) {
+                throw new MojoExecutionException("Failed to create catalog of artifacts", ioe);
+            } finally {
+                if (writer != null) {
+                    writer.close();
+                }
+            }
+    }
+
+    /**
+     * Resolves artifacts from the given sourceRepository by first resolving and processing the artifact catalog
+     * created by the promote-master mojo.
      *
      * @param sourceRepository
      * @throws MojoExecutionException
@@ -125,7 +226,7 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
             if (disableLocal == true) {
                 throw new MojoExecutionException("Cannot resolve artifacts from 'null' repository if the local repository is also disabled.");
             }
-            getLog().debug("Attaching existing artifacts from local repository only.");
+            getLog().debug("Resolving existing artifacts from local repository only.");
         } else {
             // Add the remote repository.
             remoteRepositories.addAll(Arrays.asList(getRepository(sourceRepository)));
@@ -134,16 +235,12 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
         // A place to store our resolved files...
         List<ArtifactResult> resolvedArtifacts = new ArrayList<ArtifactResult>();
 
-
-        // Build up a set of ArtifactRequests, for the pom, the current packaging layout, the -sources.jar and the -javadoc.jar and the
-        List<ArtifactRequest> requiredArtifacts = new ArrayList<ArtifactRequest>();
-
-
         // Keep track of the original base directory.
         Field localBaseDir = null;
         File originalBaseDir = session.getLocalRepositoryManager().getRepository().getBasedir();
 
-        // Disable the local repository.
+        // Disable the local repository - using a bit of reflection that I wish we didn't need to use.
+        File tempRepo = null;
         if (disableLocal) {
             getLog().info("Disabling local repository @ " + session.getLocalRepository().getBasedir());
             try {
@@ -151,8 +248,7 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
                 localBaseDir.setAccessible(true);
 
                 // Generate a new temp directory.
-                File tempRepo = Files.createTempDirectory("gitflow-helper-maven-plugin-repo").toFile();
-                tempRepo.deleteOnExit();
+                tempRepo = Files.createTempDirectory("gitflow-helper-maven-plugin-repo").toFile();
 
                 getLog().info("Using temporary local repository @ " + tempRepo.getAbsolutePath());
                 localBaseDir.set(session.getLocalRepositoryManager().getRepository(), tempRepo);
@@ -161,48 +257,72 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
             }
         }
 
-        // Adjust for archetypes...
-        String packaging = project.getPackaging();
-        if (project.getPackaging().equalsIgnoreCase("maven-archetype")) {
-            packaging = "jar";
+
+        List<ArtifactRequest> requiredArtifacts = new ArrayList<ArtifactRequest>();
+
+        // Locate our text catalog classifier file. :-)
+        BufferedReader reader = null;
+        try {
+            ArtifactResult catalogResult = artifactResolver.resolveArtifact(session, new ArtifactRequest(new DefaultArtifact(project.getGroupId(), project.getArtifactId(), "catalog", "txt", project.getVersion()), remoteRepositories, null));
+            resolvedArtifacts.add(catalogResult);
+
+            if (catalogResult.isResolved()) {
+                // Read the file line by line...
+                reader = new BufferedReader(new InputStreamReader(new FileInputStream(catalogResult.getArtifact().getFile()), Charset.forName("UTF-8")));
+
+                String coords = null;
+                while ((coords = reader.readLine()) != null) {
+                    if (!coords.trim().isEmpty()) {
+                        // And add a new ArtifactRequest
+                        requiredArtifacts.add(new ArtifactRequest(new DefaultArtifact(coords.trim()), remoteRepositories, null));
+                    }
+                }
+            }
+        } catch (ArtifactResolutionException are) {
+            throw new MojoExecutionException("Could not locate artifact catalog in remote repository.", are);
+        } catch (IOException ioe) {
+            throw new MojoExecutionException("Could not read artifact catalog", ioe);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException ioe) {}
+            }
         }
 
-        // This artifact is required!
-        requiredArtifacts.add(new ArtifactRequest(new DefaultArtifact(project.getGroupId(), project.getArtifactId(), packaging, project.getVersion()), remoteRepositories, null));
+
+        // Resolve the artifacts from the catalog (if there are any)
         try {
             resolvedArtifacts.addAll(artifactResolver.resolveArtifacts(session, requiredArtifacts));
         } catch (ArtifactResolutionException are) {
             throw new MojoExecutionException("Failed to resolve the required project files from: " + sourceRepository, are);
         }
 
-        // Optional Artifacts... We do these one at a time so we don't fail the build....
-        List<ArtifactRequest> optionalArtifacts = new ArrayList<ArtifactRequest>();
-        optionalArtifacts.add(new ArtifactRequest(new DefaultArtifact(project.getGroupId(), project.getArtifactId(), "javadoc", "jar", project.getVersion()), remoteRepositories, null));
-        optionalArtifacts.add(new ArtifactRequest(new DefaultArtifact(project.getGroupId(), project.getArtifactId(), "sources", "jar", project.getVersion()), remoteRepositories, null));
-        optionalArtifacts.add(new ArtifactRequest(new DefaultArtifact(project.getGroupId(), project.getArtifactId(), "tests", "jar", project.getVersion()), remoteRepositories, null));
+        // Get the current build artifact coordindates, so that we replace rather than re-attach.
+        String projectArtifactCoordinates = getCoordinates(project.getArtifact());
+        getLog().debug("Current Project Coordinates: " + projectArtifactCoordinates);
 
-        for (int i = 0; i < optionalArtifacts.size(); i++) {
+        // For each artifactResult, copy it to the build directory,
+        // update the resolved artifact data to point to the new file.
+        // Then either set the project artifact to point to the file in the build directory, or attach the artifact.
+        for (ArtifactResult artifactResult : resolvedArtifacts) {
             try {
-                resolvedArtifacts.add(artifactResolver.resolveArtifact(session, optionalArtifacts.get(i)));
-            } catch (ArtifactResolutionException are) {
-                if (getLog().isDebugEnabled()) {
-                    getLog().debug("Optional Artifact not found: " + optionalArtifacts.get(i).getArtifact());
+                FileUtils.copyFileToDirectory(artifactResult.getArtifact().getFile(), buildDirectory);
+                artifactResult.setArtifact(artifactResult.getArtifact().setFile(new File(buildDirectory, artifactResult.getArtifact().getFile().getName())));
+
+                if (getCoordinates(artifactResult).equals(projectArtifactCoordinates)) {
+                    getLog().debug("    Setting primary artifact: " + artifactResult.getArtifact().getFile());
+                    project.getArtifact().setFile(artifactResult.getArtifact().getFile());
+                } else {
+                    getLog().debug("    Attaching artifact: " + getCoordinates(artifactResult) + " " + artifactResult.getArtifact().getFile());
+                    projectHelper.attachArtifact(project, artifactResult.getArtifact().getExtension(), artifactResult.getArtifact().getClassifier(), artifactResult.getArtifact().getFile());
                 }
+            } catch (IOException ioe) {
+                throw new MojoExecutionException("Failed to copy resolved artifact to target directory.", ioe);
             }
         }
 
-        getLog().info("Attached " + resolvedArtifacts.size() + " previously built artifacts.");
-
-        for (int i = 0; i < resolvedArtifacts.size(); i++) {
-            Artifact artifact = resolvedArtifacts.get(i).getArtifact();
-            if (i == 0) {
-                project.getArtifact().setFile(artifact.getFile());
-            } else {
-                projectHelper.attachArtifact(project, artifact.getFile(), artifact.getClassifier());
-            }
-        }
-
-        // Restore the local repository.
+        // Restore the local repository, again using reflection.
         if (disableLocal) {
             try {
                 localBaseDir.set(session.getLocalRepositoryManager().getRepository(), originalBaseDir);
@@ -210,9 +330,15 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
             } catch (Exception ex) {
                 getLog().warn("Failed to restore original local repository path.", ex);
             }
+            if (tempRepo != null) {
+                try {
+                    FileUtils.deleteDirectory(tempRepo);
+                } catch (IOException e) {
+                    getLog().warn("Failed to cleanup temporary repository directory: " + tempRepo);
+                }
+            }
         }
     }
-
 
     private ArtifactRepositoryLayout getLayout(final String id) throws MojoExecutionException {
         ArtifactRepositoryLayout layout = repositoryLayouts.get(id);
