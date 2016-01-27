@@ -78,7 +78,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
         ExpansionBuffer eb = new ExpansionBuffer(gitBranch);
 
         if (!gitBranchExpression.equals(gitBranch) || getLog().isDebugEnabled()) { // Resolves Issue #9
-            getLog().info("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + gitBranch + "'");
+            getLog().debug("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + gitBranch + "'");
         }
 
         if (!eb.hasMoreLegalPlaceholders()) {

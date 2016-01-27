@@ -168,7 +168,7 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
      * group:artifact:type:classifier:version
      */
     protected void attachArtifactCatalog() throws MojoExecutionException {
-            getLog().debug("Cataloging Artifacts for promotion & reattachment: " + project.getBuild().getDirectory());
+            getLog().info("Cataloging Artifacts for promotion & reattachment: " + project.getBuild().getDirectory());
 
             File catalog = new File(buildDirectory, project.getArtifact().getArtifactId() + ".txt");
 
