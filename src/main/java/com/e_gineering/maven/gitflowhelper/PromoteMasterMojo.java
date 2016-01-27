@@ -23,11 +23,13 @@ public class PromoteMasterMojo extends AbstractGitflowBasedRepositoryMojo {
             case DEVELOPMENT:
             case RELEASE:
             case HOTFIX: {
+                // In order to use promote-master or attach-deployed, we need to build an artifactCatalog on deliverable branches.
                 attachArtifactCatalog();
                 break;
             }
+
             case MASTER: {
-                getLog().info("Attaching existing artifacts from stageDeploymentRepository [" + stageDeploymentRepository + "]");
+                getLog().info("Resolving & Reattaching existing artifacts from stageDeploymentRepository [" + stageDeploymentRepository + "]");
 
                 attachExistingArtifacts(stageDeploymentRepository, true);
 
