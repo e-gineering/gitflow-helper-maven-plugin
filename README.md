@@ -43,6 +43,7 @@ All of the solutions to these issues are implemented independently in different 
                 <groupId>com.e-gineering</groupId>
                 <artifactId>gitflow-helper-maven-plugin</artifactId>
                 <version>${gitflow.helper.plugin.version}</version>
+		<extensions>true</extensions>
                 <configuration>
                     <!-- These repository definitions expect id::layout::url::unique, for example
                          release::default::https://some.server.path/content/repositories/test-releases::false
@@ -66,14 +67,6 @@ All of the solutions to these issues are implemented independently in different 
             </plugin>
         </plugins>
         ...
-        <extensions>
-            <extension>
-                <groupId>com.e-gineering</groupId>
-                <artifactId>gitflow-helper-maven-plugin</artifactId>
-                <version>${gitflow.helper.plugin.version}</version>
-            </extension>
-            ...
-        </extensions>
     </build>
 ...
 </project>

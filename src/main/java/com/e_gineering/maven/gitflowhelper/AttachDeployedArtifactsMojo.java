@@ -45,7 +45,7 @@ public class AttachDeployedArtifactsMojo extends AbstractGitflowBasedRepositoryM
             }
         }
 
-        File targetDir = new File(project.getBuild().getOutputDirectory()).getParentFile();
+        File targetDir = new File(project.getBuild().getDirectory());
         for (Artifact artifact : project.getAttachedArtifacts()) {
             try {
                 FileUtils.copyFileToDirectory(artifact.getFile(), targetDir);
