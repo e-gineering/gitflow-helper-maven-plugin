@@ -235,7 +235,7 @@ package phase.
 
 The following table describes the git branch expression -> repository used for resolving prebuilt artifact mapping.
  
-| Git Branch Expression | Repository |
+| Git Branch Expression | Source Repository for re-attachment |
 | --------------------- | ---------- |
 | masterBranchPattern   | release    |
 | releaseBranchPattern  | stage      |
