@@ -9,5 +9,6 @@ public enum GitBranchType {
     HOTFIX,
     BUGFIX,
     DEVELOPMENT,
-    OTHER;
+    OTHER,
+    UNDEFINED;
 }
