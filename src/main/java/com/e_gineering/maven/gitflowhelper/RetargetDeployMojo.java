@@ -43,9 +43,11 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 break;
             }
             default: {
-                getLog().info("Un-Setting artifact repositories");
+                getLog().info("Un-Setting artifact repositories.");
                 project.setSnapshotArtifactRepository(null);
                 project.setReleaseArtifactRepository(null);
+                project.getProperties().put("maven.deploy.skip", "true");
+                getLog().info("Setting maven.deploy.skip = 'true'");
                 break;
             }
         }
