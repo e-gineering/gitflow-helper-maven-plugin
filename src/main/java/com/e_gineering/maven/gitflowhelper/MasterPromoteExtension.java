@@ -26,8 +26,6 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
     @Requirement
     private Logger logger;
 
-
-
     @Override
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
         Properties systemEnvVars = null;
