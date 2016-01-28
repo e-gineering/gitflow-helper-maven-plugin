@@ -38,7 +38,7 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
                     }
                 }
             }
-        } else { // Unversioned branch type. Must be -SNAPSHOT.
+        } else if (!type.equals(GitBranchType.UNDEFINED)) { // Unversioned branch type. Must be -SNAPSHOT.
             if (!ArtifactUtils.isSnapshot(project.getVersion())) {
                 throw new MojoFailureException("Builds from non-release git branches must end with -SNAPSHOT");
             }
