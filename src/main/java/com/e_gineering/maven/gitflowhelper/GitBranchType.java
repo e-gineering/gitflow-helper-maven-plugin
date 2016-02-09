@@ -13,5 +13,5 @@ public enum GitBranchType {
     OTHER,
     UNDEFINED;
 
-    static EnumSet<GitBranchType> VERSIONED_TYPES = EnumSet.of(GitBranchType.MASTER, GitBranchType.RELEASE, GitBranchType.HOTFIX);
+    static final EnumSet<GitBranchType> VERSIONED_TYPES = EnumSet.of(GitBranchType.MASTER, GitBranchType.RELEASE, GitBranchType.HOTFIX);
 }
