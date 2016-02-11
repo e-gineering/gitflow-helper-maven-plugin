@@ -6,7 +6,6 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 
-import java.util.EnumSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,11 +16,9 @@ import java.util.regex.Pattern;
 @Mojo(name = "enforce-versions", defaultPhase = LifecyclePhase.VALIDATE)
 public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
 
-    private static EnumSet<GitBranchType> versionedTypes = EnumSet.of(GitBranchType.MASTER, GitBranchType.RELEASE, GitBranchType.HOTFIX, GitBranchType.BUGFIX);
-
     @Override
     protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
-        if (versionedTypes.contains(type)) {
+        if (GitBranchType.VERSIONED_TYPES.contains(type)) {
             getLog().debug("Versioned Branch Type: " + type + " with branchPattern: " + branchPattern + " Checking against current branch: " + gitBranch);
             Matcher gitMatcher = Pattern.compile(branchPattern).matcher(gitBranch);
 
