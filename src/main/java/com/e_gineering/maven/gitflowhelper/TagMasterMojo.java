@@ -42,14 +42,15 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
 
     @Override
     protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
-        if (type.equals(GitBranchType.MASTER)) {
+        if (project.isExecutionRoot() && type.equals(GitBranchType.MASTER)) {
             if (gitURLExpression == null) {
                 gitURLExpression = "${env.GIT_URL}";
             }
             String gitURL = resolveExpression(gitURLExpression);
-            getLog().info("gitURLExpression: '" + gitURLExpression + "' resolved to: '" + gitURL + "'");
+            getLog().debug("gitURLExpression: '" + gitURLExpression + "' resolved to: '" + gitURL + "'");
             ExpansionBuffer eb = new ExpansionBuffer(gitURL);
             if (!eb.hasMoreLegalPlaceholders()) {
+
                 getLog().info("Invoking scm:tag for CI build matching branchPattern: [" + branchPattern + "]");
 
                 // Use the execute mojo to run the maven-scm-plugin...
