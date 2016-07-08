@@ -62,7 +62,8 @@ public class SetPropertyMojo extends AbstractGitflowBranchMojo {
                 break;
             }
         }
-        getLog().info("Setting " + key + " =  '" + resolvedValue + "'");
-        project.getProperties().put(key, resolvedValue);
+        String resolvedKey = resolveExpression(key);
+        getLog().info("Setting " + resolvedKey + " =  '" + resolvedValue + "'");
+        project.getProperties().put(resolvedKey, resolvedValue);
     }
 }

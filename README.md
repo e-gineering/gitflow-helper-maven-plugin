@@ -19,8 +19,9 @@ This plugin solves a few specific issues common in consolidated Hudson/Jenkins C
  1. Ensure the developers are following the (git branching) project version rules, and fail the build if they are not.
  2. Enable the maven-deploy-plugin to target a snapshots, test-releases, and releases repository.
  3. _Copy_ (rather than rebuild) the tested artifacts from the test-releases repository to the release repository, without doing a full project rebuild from the master branch.
- 4. Reliably tag deploy builds from the 'master' branch
- 5. Enable split 'deploy' vs. 'deliver' maven CI job configuration, without rebuilding artifacts for the 'deliver' phase.
+ 4. Set arbitrary project properties based upon the type of GIT branch being built. 
+ 5. Reliably tag deploy builds from the 'master' branch
+ 6. Enable split 'deploy' vs. 'deliver' maven CI job configuration, without rebuilding artifacts for the 'deliver' phase.
  
 In addition to supporting these goals for the project, this plugin does it in a manner that tries to be as effortless (yet configurable) as possible.
 If you use non-standard gitflow branch names (emer instead of hotfix), this plugin supports that. If you don't want to do version enforcement, this plugin supports that. 
@@ -62,6 +63,21 @@ All of the solutions to these issues are implemented independently in different 
                             <goal>tag-master</goal>
                             <goal>promote-master</goal>
                         </goals>
+                    </execution>
+                    <execution>
+                        <id>git-branch-based-property</id>
+                        <goals>
+                            <goal>set-property</goal>
+                        </goals>
+                        <configuration>
+                            <key>a.property.name</key>
+                            <masterBranchValue>prod</masterBranchValue>
+                            <releaseBranchValue>${some.arbitrary.value.resolved.at.runtime}</releaseBranchValue>
+                            <hotfixBranchValue>emer</masterBranchValue>
+                            <developmentBranchValue>dev</developmentBranchValue>
+                            <otherBranchValue>foo</otherBranchValue>
+                            <undefinedBranchValue>local.build</undefinedBranchValue>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -261,5 +277,18 @@ that the first build deployed into. Once they're attached to the project, the `j
 the artifacts built by the first job into a jboss application server.
 
 
- 
+## Goal: `set-property` (Dynamically Set a Maven Project Property)
 
+Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
+based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
+a build, or needing to setup / configure datasources for automated tests to run against.
+
+This goal allows configuration of a single project property. If more than one property is needed, it would
+likely be advantageous to leverage the properties-maven-plugin:read-project-properties goal to read the properties from
+a file. The filename/url paths loaded by the properties-maven-plugin can reference a property configured by this 
+gitflow-helper-maven-plugin:set-property goal. Since there is another clear path to load many properties based upon the 
+value of a single property, the gitflow-helper-maven-plugin only sets a single property.
+
+Configuration consists of defining the property key value, which can itself contain property references, as well as 
+values for each type of branch. Any branch without a defined value will have the property resolve to `""`, an empty 
+string.
