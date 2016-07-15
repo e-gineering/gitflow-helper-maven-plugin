@@ -62,21 +62,15 @@ All of the solutions to these issues are implemented independently in different 
                             <goal>retarget-deploy</goal>
                             <goal>tag-master</goal>
                             <goal>promote-master</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>git-branch-based-property</id>
-                        <goals>
-                            <goal>set-property</goal>
+                            <goal>set-properties</goal>
                         </goals>
                         <configuration>
-                            <key>a.property.name</key>
-                            <masterBranchValue>prod</masterBranchValue>
-                            <releaseBranchValue>${some.arbitrary.value.resolved.at.runtime}</releaseBranchValue>
-                            <hotfixBranchValue>emer</masterBranchValue>
-                            <developmentBranchValue>dev</developmentBranchValue>
-                            <otherBranchValue>foo</otherBranchValue>
-                            <undefinedBranchValue>local.build</undefinedBranchValue>
+                            <masterBranchPropertyFile>foo/bar/prod.props</masterBranchPropertyFile>
+                            <hotfixBranchPropertyFile>foo/bar/emer.props</hotfixBranchPropertyFile>
+                            <releaseBranchPropertyFile>foo/bar/test.props</releaseBranchPropertyFile>
+                            <developmentBranchPropertyFile>foo/bar/dev.props</developmentBranchPropertyFile>
+                            <otherBranchPropertyFile>foo/bar/ci.props</otherBranchPropertyFile>
+                            <undefinedBranchPropertyFile>foo/bar/local.props</undefinedBranchPropertyFile>
                         </configuration>
                     </execution>
                 </executions>
@@ -277,18 +271,15 @@ that the first build deployed into. Once they're attached to the project, the `j
 the artifacts built by the first job into a jboss application server.
 
 
-## Goal: `set-property` (Dynamically Set a Maven Project Property)
+## Goal: `set-properties` (Dynamically Set a Maven Project / System Properties)
 
 Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
 based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
 a build, or needing to setup / configure datasources for automated tests to run against.
 
-This goal allows configuration of a single project property. If more than one property is needed, it would
-likely be advantageous to leverage the properties-maven-plugin:read-project-properties goal to read the properties from
-a file. The filename/url paths loaded by the properties-maven-plugin can reference a property configured by this 
-gitflow-helper-maven-plugin:set-property goal. Since there is another clear path to load many properties based upon the 
-value of a single property, the gitflow-helper-maven-plugin only sets a single property.
+The `set-properties` goal allows for setting project (or system) properties, dynamically based on the detected git
+branch being built. Properties can be specified as a Properties collection in plugin configuration, or can be loaded
+from a property file during the build. Both property key names and property values will have placeholders resolved.
 
-Configuration consists of defining the property key value, which can itself contain property references, as well as 
-values for each type of branch. Any branch without a defined value will have the property resolve to `""`, an empty 
-string.
+Multiple executions can be configured, and each execution can target different scopes (system or project), and can load
+properties from files with an assigned keyPrefix, letting you name-space properties from execution ids.
