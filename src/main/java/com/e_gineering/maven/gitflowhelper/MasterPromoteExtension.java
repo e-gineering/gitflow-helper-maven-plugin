@@ -4,7 +4,9 @@ import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.lifecycle.internal.MojoDescriptorCreator;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.plugin.prefix.NoPluginFoundForPrefixException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
@@ -13,7 +15,10 @@ import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * Maven extension which removes (skips) undesired plugins from the build reactor when running on a master branch.
@@ -22,6 +27,9 @@ import java.util.*;
  */
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "promote-master")
 public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
+
+    @Requirement
+    private MojoDescriptorCreator descriptorCreator;
 
     @Requirement
     private Logger logger;
@@ -40,6 +48,22 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
 
         String gitBranchExpression = null;
         boolean pluginFound = false;
+
+        // Any plugin which is part of the project goals needs to be retained.
+        List<Plugin> pluginsToRetain = new ArrayList<Plugin>(session.getGoals().size());
+
+        List<String> goals = session.getGoals();
+        for (String goal : goals) {
+            int delimiter = goal.indexOf(":");
+            if (delimiter != -1) {
+                String prefix = goal.substring(0, delimiter);
+                try {
+                    pluginsToRetain.add(descriptorCreator.findPluginForPrefix(prefix, session));
+                } catch (NoPluginFoundForPrefixException ex) {
+                    throw new MavenExecutionException("Unable to resolve plugin for prefix: " + prefix, ex);
+                }
+            }
+        }
 
         // Build up a map of plugins to remove from projects, if we're on the master branch.
         HashMap<MavenProject, List<Plugin>> pluginsToDrop = new HashMap<MavenProject, List<Plugin>>();
@@ -61,11 +85,14 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                     if (gitBranchExpression == null) {
                         gitBranchExpression = extractPluginConfigValue("gitBranchExpression", plugin);
                     }
-
-                    // Don't drop the maven-deploy-plugin
+                // Don't drop things we declare goals for.
+                } else if (pluginsToRetain.contains(plugin)) {
+                    logger.debug("gitflow-helper-maven-plugin retaining plugin: " + plugin + " from project: " + project.getName());
+                // Don't drop the maven-deploy-plugin
                 } else if (plugin.getKey().equals("org.apache.maven.plugins:maven-deploy-plugin")) {
-                    logger.debug("gitflow-helper-maven-plugin removing plugin: " + plugin + " from project: " + project.getName());
+                    logger.debug("gitflow-helper-maven-plugin retaining plugin: " + plugin + " from project: " + project.getName());
                 } else {
+                    logger.debug("gitflow-helper-maven-plugin removing plugin: " + plugin + " from project: " + project.getName());
                     dropPlugins.add(plugin);
                 }
             }
