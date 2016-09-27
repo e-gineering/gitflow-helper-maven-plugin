@@ -158,9 +158,9 @@ Can be replaced with the following plugin configuration, which also introduces t
                 <artifactId>gitflow-helper-maven-plugin</artifactId>
                 <version>${gitflow.helper.plugin.version}</version>
                 <configuration>
-                    <releaseDeploymentRepository>releases::default::>https://some.server.path/content/repositories/releases::false</releaseDeploymentRepository>
-                    <stageDeploymentRepository>stage::default::>https://some.server.path/content/repositories/stage::false</stageDeploymentRepository>
-                    <snapshotDeploymentRepository>snapshots::default::>https://some.server.path/content/repositories/snapshots::true</snapshotDeploymentRepository>
+                    <releaseDeploymentRepository>releases::default::https://some.server.path/content/repositories/releases::false</releaseDeploymentRepository>
+                    <stageDeploymentRepository>stage::default::https://some.server.path/content/repositories/stage::false</stageDeploymentRepository>
+                    <snapshotDeploymentRepository>snapshots::default::https://some.server.path/content/repositories/snapshots::true</snapshotDeploymentRepository>
                 </configuration>
                 <executions>
                     <execution>
