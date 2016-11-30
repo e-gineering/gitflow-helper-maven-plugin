@@ -12,11 +12,13 @@ import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.impl.ArtifactResolver;
+import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.util.repository.AuthenticationBuilder;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -114,11 +116,23 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
         String id = matcher.group(1).trim();
         String layout = matcher.group(2).trim();
         String url = matcher.group(3).trim();
-        boolean unique = Boolean.parseBoolean(matcher.group(4).trim());
+        Authentication remoteRepoAuthentication = null;
 
-        ArtifactRepositoryLayout repoLayout = getLayout(layout);
+        for (ArtifactRepository artifactRepository : project.getRemoteArtifactRepositories()) {
+            if (artifactRepository.getId().equals(id)){
+                final org.apache.maven.artifact.repository.Authentication authentication = artifactRepository.getAuthentication();
+                AuthenticationBuilder authenticationBuilder = new AuthenticationBuilder();
+                authenticationBuilder
+                        .addUsername(authentication.getUsername())
+                        .addPassword(authentication.getPassword())
+                        .addPrivateKey(authentication.getPrivateKey(), authentication.getPassphrase());
+                remoteRepoAuthentication = authenticationBuilder.build();
 
-        return new RemoteRepository.Builder(id, layout, url).build();
+            }
+        }
+
+
+        return new RemoteRepository.Builder(id, layout, url).setAuthentication(remoteRepoAuthentication).build();
     }
 
     private String getCoordinates(ArtifactResult result) {
