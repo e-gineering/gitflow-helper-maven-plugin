@@ -12,7 +12,6 @@ import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.impl.ArtifactResolver;
-import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
@@ -88,6 +87,10 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
                     "Invalid syntax for repository. Use \"id::layout::url::unique\".");
         }
 
+        if (getLog().isDebugEnabled()) {
+            getLog().debug("Getting maven deployment repository (to target artifacts) for: " + altRepository);
+        }
+
         String id = matcher.group(1).trim();
         String layout = matcher.group(2).trim();
         String url = matcher.group(3).trim();
@@ -107,32 +110,30 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
      * @throws MojoFailureException
      */
     private RemoteRepository getRepository(final String altRepository) throws MojoExecutionException, MojoFailureException {
-        Matcher matcher = ALT_REPO_SYNTAX_PATTERN.matcher(altRepository);
-        if (!matcher.matches()) {
-            throw new MojoFailureException(altRepository, "Invalid syntax for repository.",
-                    "Invalid syntax for repository. Use \"id::layout::url::unique\".");
+        if (getLog().isDebugEnabled()) {
+            getLog().debug("Creating remote Aether repository (to resolve remote artifacts) for: " + altRepository);
+        }
+        // Get an appropriate injected ArtifactRepository. (This resolves authentication in the 'normal' manner from Maven)
+        ArtifactRepository remoteArtifactRepo = getDeploymentRepository(altRepository);
+
+        if (getLog().isDebugEnabled()) {
+            getLog().debug("Resolved maven deployment repository. Transcribing to Aether Repository...");
         }
 
-        String id = matcher.group(1).trim();
-        String layout = matcher.group(2).trim();
-        String url = matcher.group(3).trim();
-        Authentication remoteRepoAuthentication = null;
+        RemoteRepository.Builder remoteRepoBuilder = new RemoteRepository.Builder(remoteArtifactRepo.getId(), remoteArtifactRepo.getLayout().getId(), remoteArtifactRepo.getUrl());
 
-        for (ArtifactRepository artifactRepository : project.getRemoteArtifactRepositories()) {
-            if (artifactRepository.getId().equals(id)){
-                final org.apache.maven.artifact.repository.Authentication authentication = artifactRepository.getAuthentication();
-                AuthenticationBuilder authenticationBuilder = new AuthenticationBuilder();
-                authenticationBuilder
-                        .addUsername(authentication.getUsername())
-                        .addPassword(authentication.getPassword())
-                        .addPrivateKey(authentication.getPrivateKey(), authentication.getPassphrase());
-                remoteRepoAuthentication = authenticationBuilder.build();
-
+        // Add authentication.
+        if (remoteArtifactRepo.getAuthentication() != null) {
+            if (getLog().isDebugEnabled()) {
+                getLog().debug("Maven deployment repsoitory has Authentication. Transcribing to Aether Authentication...");
             }
+            remoteRepoBuilder.setAuthentication(new AuthenticationBuilder().addUsername(remoteArtifactRepo.getAuthentication().getUsername())
+                    .addPassword(remoteArtifactRepo.getAuthentication().getPassword())
+                    .addPrivateKey(remoteArtifactRepo.getAuthentication().getPrivateKey(), remoteArtifactRepo.getAuthentication().getPassphrase())
+                    .build());
         }
 
-
-        return new RemoteRepository.Builder(id, layout, url).setAuthentication(remoteRepoAuthentication).build();
+        return remoteRepoBuilder.build();
     }
 
     private String getCoordinates(ArtifactResult result) {
