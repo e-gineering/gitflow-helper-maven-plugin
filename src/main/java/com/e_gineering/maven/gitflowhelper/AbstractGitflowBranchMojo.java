@@ -8,7 +8,6 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.scm.ScmException;
 import org.apache.maven.scm.manager.ScmManager;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 
@@ -66,7 +65,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
 
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (gitBranchExpression == null) {
-            gitBranchExpression = getGitBranch();
+            gitBranchExpression = ScmUtils.resolveBranchOrExpression(scmManager, project, getLog());
         }
 
         try {
@@ -103,18 +102,6 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
             }
         } else {
             logExecute(GitBranchType.UNDEFINED, gitBranch, null);
-        }
-    }
-
-    private String getGitBranch() throws MojoExecutionException {
-        try {
-            String branch = ScmUtils.getGitBranch(scmManager, project);
-            if (branch == null) {
-                throw new MojoExecutionException("gitflow-helper-maven-plugin requires a Git project, use gitBranchExpression to by-pass this check");
-            }
-            return branch;
-        } catch (ScmException e) {
-            throw new MojoExecutionException("Cannot get the branch information from the git repository: \n" + e.getLocalizedMessage(), e);
         }
     }
 }

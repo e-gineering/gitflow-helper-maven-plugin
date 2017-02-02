@@ -6,10 +6,9 @@ import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.internal.MojoDescriptorCreator;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.monitor.logging.DefaultLog;
 import org.apache.maven.plugin.prefix.NoPluginFoundForPrefixException;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.scm.ScmException;
 import org.apache.maven.scm.manager.ScmManager;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
@@ -17,7 +16,6 @@ import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -92,10 +90,10 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                     if (gitBranchExpression == null) {
                         gitBranchExpression = extractPluginConfigValue("gitBranchExpression", plugin);
                     }
-                // Don't drop things we declare goals for.
+                    // Don't drop things we declare goals for.
                 } else if (pluginsToRetain.contains(plugin)) {
                     logger.debug("gitflow-helper-maven-plugin retaining plugin: " + plugin + " from project: " + project.getName());
-                // Don't drop the maven-deploy-plugin
+                    // Don't drop the maven-deploy-plugin
                 } else if (plugin.getKey().equals("org.apache.maven.plugins:maven-deploy-plugin")) {
                     logger.debug("gitflow-helper-maven-plugin retaining plugin: " + plugin + " from project: " + project.getName());
                 } else {
@@ -105,7 +103,7 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
             }
 
             if (gitBranchExpression == null) {
-                gitBranchExpression = getGitBranch(project);
+                gitBranchExpression = ScmUtils.resolveBranchOrExpression(scmManager, project, new DefaultLog(logger));
             }
 
             pluginsToDrop.put(project, dropPlugins);
@@ -155,17 +153,5 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
         } catch (Exception ex) {
         }
         return null;
-    }
-
-    private String getGitBranch(MavenProject project) throws MavenExecutionException {
-        try {
-            String branch = ScmUtils.getGitBranch(scmManager, project);
-            if (branch == null) {
-                throw new MavenExecutionException("gitflow-helper-maven-plugin requires a Git project, use gitBranchExpression to by-pass this check", project.getFile());
-            }
-            return branch;
-        } catch (ScmException e) {
-            throw new MavenExecutionException("Cannot get the branch information from the git repository: \n" + e.getLocalizedMessage(), e);
-        }
     }
 }
