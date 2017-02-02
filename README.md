@@ -32,7 +32,8 @@ All of the solutions to these issues are implemented independently in different 
  
 # I want all of that. (Usage)
 
- 1. Make sure your build server sets environment variables for git branches and git URLs. The plugin defaults are configured out of the box for Jenkins & Hudson.
+ 1. Make sure you have a your Project SCM configured for your git repository, or that your build server sets environment variables for git branches and git URLs.
+    Out of the box, the plugin will try to resolve the git branch based upon the SCM definition on your maven project, or fall back to the environment variables set by Jenkins and Hudson.
  2. Configure the plugin goals and add the build extension to your Maven project. Here's an example that will get you going quickly...
 
 ```
@@ -53,7 +54,7 @@ All of the solutions to these issues are implemented independently in different 
                     <stageDeploymentRepository>${stage.repository}</stageDeploymentRepository>
                     <snapshotDeploymentRepository>${snapshot.repository}</snapshotDeploymentRepository>
                     <!-- The plugin will read the git branch ang git url by resolving these properties at run-time -->
-                    <gitBranchProperty>
+                    <gitBranchExpression/>
                 </configuration>
                 <executions>
                     <execution>
@@ -102,7 +103,7 @@ The following properties change the behavior of this goal:
 
 | Property             | Default Value | SNAPSHOT allowed? | Description |
 | -------------------- | ------------- | --------------------------- | ----------- |
-| gitBranchExpression  | ${env.GIT_BRANCH} | n/a | Maven property expression to resolve in order to determine the current git branch |
+| gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | n/a | Maven property expression to resolve in order to determine the current git branch |
 | masterBranchPattern  | origin/master | No | Regex. When matched, signals the master branch is being built. Note the lack of a subgroup. |
 | releaseBranchPattern | origin/release/(.*) | No | Regex. When matched, signals a release branch being built. Subgroup 1, if present, must match the Maven project version. |
 | hotfixBranchPattern  | origin/hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Subgroup 1, if present, must match the Maven project version. |
@@ -122,7 +123,7 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 
 | Property | Default Value | Description | 
 | -------- | ------------- | ----------- |
-| gitBranchExpression  | ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
+| gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
 | releaseDeploymentRepository | n/a | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern`) |
 | stageDeploymentRepository | n/a | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern` | 
 | snapshotDeploymentRepository | n/a | The repository to use for snapshots. (Builds matching `developmentBranchPattern` |
@@ -179,21 +180,16 @@ Can be replaced with the following plugin configuration, which also introduces t
 In a gitflow environment, a commit to a master branch should trigger a job to build on the master branch, which would result in the release being tagged if successful.
  
 The `tag-master` goal executes the [maven-scm-plugin tag goal](https://maven.apache.org/scm/maven-scm-plugin/tag-mojo.html) when the 
-`gitBranchExpression` resolves to a value matching the `masterBranchPattern` regular expression. To determine the SCM URL to use, the `gitURLExpression`
-is evaluated at run-time. The default expression, `${env.GIT_URL}`, is provided by Jenkins & Hudson. 
-
-To resolve the `<developerConnection>` in an `<scm>` block in your pom, you can specify the following in your plugin configuration:
-
-```
-<gitURLExpression>${project.scm.developerConnection}</gitURLExpression>
-```
+`gitBranchExpression` resolves to a value matching the `masterBranchPattern` regular expression. To determine the SCM URL to use, the plugin looks for a 
+`developerConnection` or `connection` information in an SCM block, and if not found the `gitURLExpression` is evaluated at run-time. 
+The default expression, `${env.GIT_URL}`, is one that is commonly provided by Jenkins & Hudson. 
 
 The following properties can be configured for this goal:
 
 | Property             | Default Value | Description |
 | -------------------- | ------------- | ----------- |
-| gitBranchExpression  | ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
-| gitURLExpression     | ${env.GIT_URL} | Maven property expression to resolve for the GIT URL connection to use. |
+| gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
+| gitURLExpression     | current git branch resolved from SCM or ${env.GIT_URL} | Maven property expression to resolve for the GIT URL connection to use. |
 | masterBranchPattern  | origin/master | Regex. When matched against the resolved value of `gitBranchExpression` this plugin executes the scm:tag goal using the `gitURLExpression` to resolve the git URL to use. |
 | tag                  | ${project.version} | An expression to use for the SCM tag. |
 | tag.plugin.groupId   | org.apache.maven.plugins | The groupId of the plugin to use for tagging. |
