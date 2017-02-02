@@ -16,7 +16,12 @@ public abstract class ScmUtils {
     public static String getGitBranch(ScmManager scmManager, MavenProject project) throws ScmException {
         String scmConnectionUrl = project.getScm().getConnection();
         String scmDeveloperConnectionUrl = project.getScm().getDeveloperConnection();
-        ScmRepository repository = scmManager.makeScmRepository(StringUtils.isNotBlank(scmDeveloperConnectionUrl) ? scmDeveloperConnectionUrl : scmConnectionUrl);
+        String connectionUrl = StringUtils.isNotBlank(scmDeveloperConnectionUrl) ? scmDeveloperConnectionUrl : scmConnectionUrl;
+        if (StringUtils.isBlank(connectionUrl)) {
+            return "${env.GIT_BRANCH}";
+        }
+
+        ScmRepository repository = scmManager.makeScmRepository(connectionUrl);
         ScmProvider provider = scmManager.getProviderByRepository(repository);
         if (!GitScmProviderRepository.PROTOCOL_GIT.equals(provider.getScmType())) {
             return null;
