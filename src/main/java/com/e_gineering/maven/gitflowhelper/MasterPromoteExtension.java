@@ -102,10 +102,6 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                 }
             }
 
-            if (gitBranchExpression == null) {
-                gitBranchExpression = ScmUtils.resolveBranchOrExpression(scmManager, project, new DefaultLog(logger));
-            }
-
             pluginsToDrop.put(project, dropPlugins);
         }
 
@@ -117,8 +113,8 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
             logger.debug("Master Branch Pattern: " + masterBranchPattern);
 
             if (gitBranchExpression == null) {
-                logger.debug("Using default gitBranchExpression.");
-                gitBranchExpression = "${env.GIT_BRANCH}";
+                logger.debug("Using default branch expression resolver.");
+                gitBranchExpression = ScmUtils.resolveBranchOrExpression(scmManager, session.getTopLevelProject(), new DefaultLog(logger));
             }
             logger.debug("Git Branch Expression: " + gitBranchExpression);
 
