@@ -7,10 +7,11 @@ It does so by:
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
  * Coercing Maven to gracefully support the gitflow workflow without imposing complex CI job configurations or complex Maven setups.
     * Setting distributionManagement repositories (for things like [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/)) based upon the current git branch.
-    * SCM tagging builds for the master branch, using the CI server's repository connection information. (Zero Maven scm configuration necessary, or if you prefer it, you can use the &lt;scm&gt; from maven)
+    * SCM tagging builds for the master branch. You can use the project SCM definition, or if you omit it, you can resolve the CI server's repository connection information. (Zero Maven scm configuration necessary)
     * Promoting existing tested (staged) artifacts for release, rather than re-building the artifacts. Eliminates the risk of accidental master merges or commits resulting in untested code being released, and provides digest hash traceability for the history of artifacts.
     * Enabling the decoupling of repository deployment and execution environment delivery based on the current git branch.
  * Automated deployment, promotion, and delivery of projects without the [maven-release-plugin](http://maven.apache.org/maven-release/maven-release-plugin/) or some other [*almost there* solution](https://axelfontaine.com/blog/final-nail.html).
+ * Customizing maven project and system properties based upon the current branch being built. This allows test cases to target different execution environments without changing the artifact results.
 
 # Why would I want to use this?
 
@@ -39,6 +40,10 @@ All of the solutions to these issues are implemented independently in different 
 ```
 <project>
     ...
+    <scm>
+        <developerConnection>scm:git:ssh://git@server/project/path.git</developerConnection>
+    </scm>
+    ...
     <build>
         <plugins>
             <plugin>
@@ -53,8 +58,6 @@ All of the solutions to these issues are implemented independently in different 
                     <releaseDeploymentRepository>${release.repository}</releaseDeploymentRepository>
                     <stageDeploymentRepository>${stage.repository}</stageDeploymentRepository>
                     <snapshotDeploymentRepository>${snapshot.repository}</snapshotDeploymentRepository>
-                    <!-- The plugin will read the git branch and git url by resolving these properties at run-time -->
-                    <gitBranchExpression/>
                 </configuration>
                 <executions>
                     <execution>
@@ -264,7 +267,7 @@ that the first build deployed into. Once they're attached to the project, the `j
 the artifacts built by the first job into a jboss application server.
 
 
-## Goal: `set-properties` (Dynamically Set a Maven Project / System Properties)
+## Goal: `set-properties` (Dynamically Set Maven Project / System Properties)
 
 Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
 based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
