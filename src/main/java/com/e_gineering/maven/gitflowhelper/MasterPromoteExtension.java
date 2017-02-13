@@ -121,7 +121,7 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
 
             PropertyResolver pr = new PropertyResolver();
             String gitBranch = pr.resolveValue(gitBranchExpression, session.getCurrentProject().getProperties(), systemEnvVars);
-            logger.info("Build Extension Resolved: " + gitBranchExpression + " to: " + gitBranch);
+            logger.info("gitflow-helper-maven-plugin: Build Extension resolved gitBranchExpression: " + gitBranchExpression + " to: " + gitBranch);
 
             // Test to see if the current GIT_BRANCH matches the masterBranchPattern...
             if (gitBranch != null && gitBranch.matches(masterBranchPattern)) {
