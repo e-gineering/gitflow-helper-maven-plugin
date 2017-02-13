@@ -28,8 +28,8 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
                     throw new MojoFailureException("The current git branch: [" + gitBranch + "] is defined as a release branch. The maven project version: [" + project.getVersion() + "] is currently a snapshot version.");
                 }
 
-                // Expect the last group to match (exactly) the current projectVersion.
-                if (gitMatcher.groupCount() > 0) {
+                // Expect the last group on non-master branches to match (exactly) the current projectVersion. (only release / hotfix branches)
+                if (gitMatcher.groupCount() > 0 && !GitBranchType.MASTER.equals(type)) {
                     if (!gitMatcher.group(gitMatcher.groupCount()).trim().equals(project.getVersion().trim())) {
                         throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to be: [" + gitMatcher.group(gitMatcher.groupCount()).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
                     }

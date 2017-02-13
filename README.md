@@ -96,8 +96,8 @@ In practice, the Maven versions should:
 The `enforce-versions` goal asserts these semantics when it can resolve the `gitBranchExpression`.
 
 The goal accomplishes this by checking the Maven pom.xml version value, and asserting the -SNAPSHOT status, as well as matching the current branch name
-against regular expressions, extracting version numbers from the branch names where applicable. If a regex specifies a subgroup 1, the content of that 
-subgroup is asserted to equal the version defined in the pom.xml.
+against regular expressions, extracting version numbers from the branch names where applicable. If a regex specifies subgroups, the content of the 
+last subgroup is asserted to equal the version defined in the pom.xml.
 
 The following properties change the behavior of this goal:
 
@@ -105,8 +105,8 @@ The following properties change the behavior of this goal:
 | -------------------- | ------------- | --------------------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | n/a | Maven property expression to resolve in order to determine the current git branch |
 | masterBranchPattern  | origin/master | No | Regex. When matched, signals the master branch is being built. Note the lack of a subgroup. |
-| releaseBranchPattern | origin/release/(.*) | No | Regex. When matched, signals a release branch being built. Subgroup 1, if present, must match the Maven project version. |
-| hotfixBranchPattern  | origin/hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Subgroup 1, if present, must match the Maven project version. |
+| releaseBranchPattern | origin/release/(.*) | No | Regex. When matched, signals a release branch being built. Last subgroup, if present, must match the Maven project version. |
+| hotfixBranchPattern  | origin/hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Last subgroup, if present, must match the Maven project version. |
 | developmentBranchPattern | origin/develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
 
 ## Goal: `retarget-deploy` (Branch Specific Deploy Targets & Staging)
