@@ -90,7 +90,7 @@ In practice, the Maven versions should:
  
  * Be synchronized with release branch and hotfix branch names.
  * Never be -SNAPSHOT in the master branch, release, or hotfix branches.
- * Always be -SNAPSHOT in the development branch.
+ * Always be -SNAPSHOT in the develop branch.
  * Be irrelevant if there's no git branch resolvable from your environment.
 
 The `enforce-versions` goal asserts these semantics when it can resolve the `gitBranchExpression`.
@@ -107,7 +107,7 @@ The following properties change the behavior of this goal:
 | masterBranchPattern  | origin/master | No | Regex. When matched, signals the master branch is being built. Note the lack of a subgroup. |
 | releaseBranchPattern | origin/release/(.*) | No | Regex. When matched, signals a release branch being built. Subgroup 1, if present, must match the Maven project version. |
 | hotfixBranchPattern  | origin/hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Subgroup 1, if present, must match the Maven project version. |
-| developmentBranchPattern | origin/development | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
+| developmentBranchPattern | origin/develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
 
 ## Goal: `retarget-deploy` (Branch Specific Deploy Targets & Staging)
 
