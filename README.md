@@ -104,10 +104,10 @@ The following properties change the behavior of this goal:
 | Property             | Default Value | SNAPSHOT allowed? | Description |
 | -------------------- | ------------- | --------------------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | n/a | Maven property expression to resolve in order to determine the current git branch |
-| masterBranchPattern  | origin/master | No | Regex. When matched, signals the master branch is being built. Note the lack of a subgroup. |
-| releaseBranchPattern | origin/release/(.*) | No | Regex. When matched, signals a release branch being built. Last subgroup, if present, must match the Maven project version. |
-| hotfixBranchPattern  | origin/hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Last subgroup, if present, must match the Maven project version. |
-| developmentBranchPattern | origin/develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
+| masterBranchPattern  | (origin/)?master | No | Regex. When matched, signals the master branch is being built. |
+| releaseBranchPattern | (origin/)?release/(.*) | No | Regex. When matched, signals a release branch being built. Last subgroup, if present, must match the Maven project version. |
+| hotfixBranchPattern  | (origin/)?hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Last subgroup, if present, must match the Maven project version. |
+| developmentBranchPattern | (origin/)?develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
 
 ## Goal: `retarget-deploy` (Branch Specific Deploy Targets & Staging)
 
@@ -190,11 +190,8 @@ The following properties can be configured for this goal:
 | -------------------- | ------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
 | gitURLExpression     | current git branch resolved from SCM or ${env.GIT_URL} | Maven property expression to resolve for the GIT URL connection to use. |
-| masterBranchPattern  | origin/master | Regex. When matched against the resolved value of `gitBranchExpression` this plugin executes the scm:tag goal using the `gitURLExpression` to resolve the git URL to use. |
+| masterBranchPattern  | (origin/)?master | Regex. When matched against the resolved value of `gitBranchExpression` this plugin executes the scm:tag goal using the `gitURLExpression` to resolve the git URL to use. |
 | tag                  | ${project.version} | An expression to use for the SCM tag. |
-| tag.plugin.groupId   | org.apache.maven.plugins | The groupId of the plugin to use for tagging. |
-| tag.plugin.artifactId | maven-scm-plugin | The artifactId of the plugin to use for tagging. | 
-| tag.plugin.version | 1.9.4 | The version of the plugin to use for tagging. |
 
 
 ## Goal: `promote-master` and the Build Extension. (Copy Staged Artifacts to Releases)
