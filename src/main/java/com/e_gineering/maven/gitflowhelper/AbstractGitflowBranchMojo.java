@@ -39,7 +39,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     @Parameter(defaultValue = "origin/hotfix/(.*)", property = "hotfixBranchPattern", required = true)
     private String hotfixBranchPattern;
 
-    @Parameter(defaultValue = "origin/development", property = "developmentBranchPattern", required = true)
+    @Parameter(defaultValue = "origin/develop", property = "developmentBranchPattern", required = true)
     private String developmentBranchPattern;
 
     // @Parameter tag causes property resolution to fail for patterns containing ${env.}. Default provided in execute();
@@ -86,7 +86,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
             /*
              * /origin/master goes to the maven 'release' repo.
              * /origin/release/.* , /origin/hotfix/.* , and /origin/bugfix/.* go to the maven 'stage' repo.
-             * /origin/development goes to the 'snapshot' repo.
+             * /origin/develop goes to the 'snapshot' repo.
              * All other builds will use the default semantics for 'deploy'.
              */
             if (gitBranch.matches(masterBranchPattern)) {
