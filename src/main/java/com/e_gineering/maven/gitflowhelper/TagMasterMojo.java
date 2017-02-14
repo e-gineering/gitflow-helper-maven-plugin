@@ -32,6 +32,9 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
                 gitURLExpression = ScmUtils.resolveUrlOrExpression(project, getLog());
             }
             String gitURL = resolveExpression(gitURLExpression);
+            if (!gitURL.startsWith("scm:git:")) {
+                gitURL = "scm:git:" + gitURL;
+            }
             getLog().debug("gitURLExpression: '" + gitURLExpression + "' resolved to: '" + gitURL + "'");
             ExpansionBuffer eb = new ExpansionBuffer(gitURL);
             if (!eb.hasMoreLegalPlaceholders()) {
