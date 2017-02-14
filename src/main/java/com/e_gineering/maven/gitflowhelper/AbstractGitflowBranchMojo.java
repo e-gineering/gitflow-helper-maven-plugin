@@ -8,6 +8,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.scm.manager.ScmManager;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 
 import java.io.IOException;
@@ -26,16 +27,19 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     @Component
     protected MavenProject project;
 
-    @Parameter(defaultValue = "origin/master", property = "masterBranchPattern", required = true)
+    @Component
+    protected ScmManager scmManager;
+
+    @Parameter(defaultValue = "(origin/)?master", property = "masterBranchPattern", required = true)
     private String masterBranchPattern;
 
-    @Parameter(defaultValue = "origin/release/(.*)", property = "releaseBranchPattern", required = true)
+    @Parameter(defaultValue = "(origin/)?release/(.*)", property = "releaseBranchPattern", required = true)
     private String releaseBranchPattern;
 
-    @Parameter(defaultValue = "origin/hotfix/(.*)", property = "hotfixBranchPattern", required = true)
+    @Parameter(defaultValue = "(origin/)?hotfix/(.*)", property = "hotfixBranchPattern", required = true)
     private String hotfixBranchPattern;
 
-    @Parameter(defaultValue = "origin/development", property = "developmentBranchPattern", required = true)
+    @Parameter(defaultValue = "(origin/)?develop", property = "developmentBranchPattern", required = true)
     private String developmentBranchPattern;
 
     // @Parameter tag causes property resolution to fail for patterns containing ${env.}. Default provided in execute();
@@ -61,7 +65,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
 
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (gitBranchExpression == null) {
-            gitBranchExpression = "${env.GIT_BRANCH}";
+            gitBranchExpression = ScmUtils.resolveBranchOrExpression(scmManager, project, getLog());
         }
 
         try {
@@ -80,9 +84,9 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
 
         if (!eb.hasMoreLegalPlaceholders()) {
             /*
-             * /origin/master goes to the maven 'release' repo.
-             * /origin/release/.* , /origin/hotfix/.* , and /origin/bugfix/.* go to the maven 'stage' repo.
-             * /origin/development goes to the 'snapshot' repo.
+             * (/origin/)?master goes to the maven 'release' repo.
+             * (/origin/)?release/(.*) , (/origin/)?hotfix/(.*) , and (/origin/)?bugfix/(.*) go to the maven 'stage' repo.
+             * (/origin/)?develop goes to the 'snapshot' repo.
              * All other builds will use the default semantics for 'deploy'.
              */
             if (gitBranch.matches(masterBranchPattern)) {

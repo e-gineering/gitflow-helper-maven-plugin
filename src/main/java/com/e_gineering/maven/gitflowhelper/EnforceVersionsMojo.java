@@ -28,13 +28,15 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
                     throw new MojoFailureException("The current git branch: [" + gitBranch + "] is defined as a release branch. The maven project version: [" + project.getVersion() + "] is currently a snapshot version.");
                 }
 
-                // If there is a group 1, expect it to match (exactly) the current projectVersion.
-                if (gitMatcher.groupCount() >= 1) {
-                    if (!gitMatcher.group(1).trim().equals(project.getVersion().trim())) {
-                        throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to be: [" + gitMatcher.group(1).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
+                // Expect the last group on non-master branches to match (exactly) the current projectVersion. (only release / hotfix branches)
+                if (gitMatcher.groupCount() > 0 && !GitBranchType.MASTER.equals(type)) {
+                    if (!gitMatcher.group(gitMatcher.groupCount()).trim().equals(project.getVersion().trim())) {
+                        throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to be: [" + gitMatcher.group(gitMatcher.groupCount()).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
                     }
                 }
             }
+        } else if (GitBranchType.DEVELOPMENT.equals(type) && !ArtifactUtils.isSnapshot(project.getVersion())) {
+            throw new MojoFailureException("The current git branch: [" + gitBranch + "] is detected as the gitflow development branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
         }
     }
 }

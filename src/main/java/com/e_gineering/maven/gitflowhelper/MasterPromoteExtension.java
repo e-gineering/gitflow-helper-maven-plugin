@@ -6,8 +6,10 @@ import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.internal.MojoDescriptorCreator;
 import org.apache.maven.model.Plugin;
+import org.apache.maven.monitor.logging.DefaultLog;
 import org.apache.maven.plugin.prefix.NoPluginFoundForPrefixException;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.scm.manager.ScmManager;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
@@ -33,6 +35,9 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
 
     @Requirement
     private Logger logger;
+
+    @Requirement
+    protected ScmManager scmManager;
 
     @Override
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
@@ -85,10 +90,10 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                     if (gitBranchExpression == null) {
                         gitBranchExpression = extractPluginConfigValue("gitBranchExpression", plugin);
                     }
-                // Don't drop things we declare goals for.
+                    // Don't drop things we declare goals for.
                 } else if (pluginsToRetain.contains(plugin)) {
                     logger.debug("gitflow-helper-maven-plugin retaining plugin: " + plugin + " from project: " + project.getName());
-                // Don't drop the maven-deploy-plugin
+                    // Don't drop the maven-deploy-plugin
                 } else if (plugin.getKey().equals("org.apache.maven.plugins:maven-deploy-plugin")) {
                     logger.debug("gitflow-helper-maven-plugin retaining plugin: " + plugin + " from project: " + project.getName());
                 } else {
@@ -108,15 +113,15 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
             logger.debug("Master Branch Pattern: " + masterBranchPattern);
 
             if (gitBranchExpression == null) {
-                logger.debug("Using default gitBranchExpression.");
-                gitBranchExpression = "${env.GIT_BRANCH}";
+                logger.debug("Using default branch expression resolver.");
+                gitBranchExpression = ScmUtils.resolveBranchOrExpression(scmManager, session.getTopLevelProject(), new DefaultLog(logger));
             }
             logger.debug("Git Branch Expression: " + gitBranchExpression);
 
 
             PropertyResolver pr = new PropertyResolver();
             String gitBranch = pr.resolveValue(gitBranchExpression, session.getCurrentProject().getProperties(), systemEnvVars);
-            logger.info("Build Extension Resolved: " + gitBranchExpression + " to: " + gitBranch);
+            logger.info("gitflow-helper-maven-plugin: Build Extension resolved gitBranchExpression: " + gitBranchExpression + " to: " + gitBranch);
 
             // Test to see if the current GIT_BRANCH matches the masterBranchPattern...
             if (gitBranch != null && gitBranch.matches(masterBranchPattern)) {
