@@ -21,12 +21,11 @@ public abstract class ScmUtils {
      * Given the ScmManager for the current execution cycle, and the MavenProject structure, determine the SCM URL or
      * an expression we can resolve the URL from.
      *
-     * @param scmManager The current maven ScmManager
      * @param project    The Current maven Project
      * @param log        A Log to write to
      * @return The developerConnection, if none set, the connection, if none set, then the expression, <code>"${env.GIT_URL}"</code>
      */
-    public static String resolveUrlOrExpression(final ScmManager scmManager, final MavenProject project, final Log log) {
+    public static String resolveUrlOrExpression(final MavenProject project, final Log log) {
         String connectionUrl = null;
 
         // Some projects don't specify SCM Blocks, and instead rely upon the CI server to provide an '${env.GIT_BRANCH}'
@@ -53,7 +52,7 @@ public abstract class ScmUtils {
      * @throws ScmException
      */
     public static String resolveBranchOrExpression(final ScmManager scmManager, final MavenProject project, final Log log) {
-        String connectionUrl = resolveUrlOrExpression(scmManager, project, log);
+        String connectionUrl = resolveUrlOrExpression(project, log);
 
         // If a connectionURL other than the default expression was resolved, try to resolve the branch.
         if (!StringUtils.equals(connectionUrl, DEFAULT_URL_EXPRESSION)) {

@@ -7,10 +7,11 @@ It does so by:
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
  * Coercing Maven to gracefully support the gitflow workflow without imposing complex CI job configurations or complex Maven setups.
     * Setting distributionManagement repositories (for things like [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/)) based upon the current git branch.
-    * SCM tagging builds for the master branch, using the CI server's repository connection information. (Zero Maven scm configuration necessary)
+    * SCM tagging builds for the master branch. You can use the project SCM definition, or if you omit it, you can resolve the CI server's repository connection information. (Zero Maven scm configuration necessary)
     * Promoting existing tested (staged) artifacts for release, rather than re-building the artifacts. Eliminates the risk of accidental master merges or commits resulting in untested code being released, and provides digest hash traceability for the history of artifacts.
     * Enabling the decoupling of repository deployment and execution environment delivery based on the current git branch.
  * Automated deployment, promotion, and delivery of projects without the [maven-release-plugin](http://maven.apache.org/maven-release/maven-release-plugin/) or some other [*almost there* solution](https://axelfontaine.com/blog/final-nail.html).
+ * Customizing maven project and system properties based upon the current branch being built. This allows test cases to target different execution environments without changing the artifact results.
 
 # Why would I want to use this?
 
@@ -34,10 +35,14 @@ All of the solutions to these issues are implemented independently in different 
 
  1. Make sure you have a your Project SCM configured for your git repository, or that your build server sets environment variables for git branches and git URLs.
     Out of the box, the plugin will try to resolve the git branch based upon the SCM definition on your maven project, or fall back to the environment variables set by Jenkins and Hudson.
- 2. Configure the plugin goals and add the build extension to your Maven project. Here's an example that will get you going quickly...
+ 2. Configure the plugin goals and add the build extension to your Maven project. Here's an example that will get you going quickly with all the features...
 
 ```
 <project>
+    ...
+    <scm>
+        <developerConnection>scm:git:ssh://git@server/project/path.git</developerConnection>
+    </scm>
     ...
     <build>
         <plugins>
@@ -53,8 +58,6 @@ All of the solutions to these issues are implemented independently in different 
                     <releaseDeploymentRepository>${release.repository}</releaseDeploymentRepository>
                     <stageDeploymentRepository>${stage.repository}</stageDeploymentRepository>
                     <snapshotDeploymentRepository>${snapshot.repository}</snapshotDeploymentRepository>
-                    <!-- The plugin will read the git branch ang git url by resolving these properties at run-time -->
-                    <gitBranchExpression/>
                 </configuration>
                 <executions>
                     <execution>
@@ -90,24 +93,24 @@ In practice, the Maven versions should:
  
  * Be synchronized with release branch and hotfix branch names.
  * Never be -SNAPSHOT in the master branch, release, or hotfix branches.
- * Always be -SNAPSHOT in the development branch.
+ * Always be -SNAPSHOT in the develop branch.
  * Be irrelevant if there's no git branch resolvable from your environment.
 
 The `enforce-versions` goal asserts these semantics when it can resolve the `gitBranchExpression`.
 
 The goal accomplishes this by checking the Maven pom.xml version value, and asserting the -SNAPSHOT status, as well as matching the current branch name
-against regular expressions, extracting version numbers from the branch names where applicable. If a regex specifies a subgroup 1, the content of that 
-subgroup is asserted to equal the version defined in the pom.xml.
+against regular expressions, extracting version numbers from the branch names where applicable. If a regex specifies subgroups, the content of the 
+last subgroup is asserted to equal the version defined in the pom.xml.
 
 The following properties change the behavior of this goal:
 
 | Property             | Default Value | SNAPSHOT allowed? | Description |
 | -------------------- | ------------- | --------------------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | n/a | Maven property expression to resolve in order to determine the current git branch |
-| masterBranchPattern  | origin/master | No | Regex. When matched, signals the master branch is being built. Note the lack of a subgroup. |
-| releaseBranchPattern | origin/release/(.*) | No | Regex. When matched, signals a release branch being built. Subgroup 1, if present, must match the Maven project version. |
-| hotfixBranchPattern  | origin/hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Subgroup 1, if present, must match the Maven project version. |
-| developmentBranchPattern | origin/development | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
+| masterBranchPattern  | (origin/)?master | No | Regex. When matched, signals the master branch is being built. |
+| releaseBranchPattern | (origin/)?release/(.*) | No | Regex. When matched, signals a release branch being built. Last subgroup, if present, must match the Maven project version. |
+| hotfixBranchPattern  | (origin/)?hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Last subgroup, if present, must match the Maven project version. |
+| developmentBranchPattern | (origin/)?develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
 
 ## Goal: `retarget-deploy` (Branch Specific Deploy Targets & Staging)
 
@@ -190,11 +193,8 @@ The following properties can be configured for this goal:
 | -------------------- | ------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
 | gitURLExpression     | current git branch resolved from SCM or ${env.GIT_URL} | Maven property expression to resolve for the GIT URL connection to use. |
-| masterBranchPattern  | origin/master | Regex. When matched against the resolved value of `gitBranchExpression` this plugin executes the scm:tag goal using the `gitURLExpression` to resolve the git URL to use. |
+| masterBranchPattern  | (origin/)?master | Regex. When matched against the resolved value of `gitBranchExpression` this plugin executes the scm:tag goal using the `gitURLExpression` to resolve the git URL to use. |
 | tag                  | ${project.version} | An expression to use for the SCM tag. |
-| tag.plugin.groupId   | org.apache.maven.plugins | The groupId of the plugin to use for tagging. |
-| tag.plugin.artifactId | maven-scm-plugin | The artifactId of the plugin to use for tagging. | 
-| tag.plugin.version | 1.9.4 | The version of the plugin to use for tagging. |
 
 
 ## Goal: `promote-master` and the Build Extension. (Copy Staged Artifacts to Releases)
@@ -267,7 +267,7 @@ that the first build deployed into. Once they're attached to the project, the `j
 the artifacts built by the first job into a jboss application server.
 
 
-## Goal: `set-properties` (Dynamically Set a Maven Project / System Properties)
+## Goal: `set-properties` (Dynamically Set Maven Project / System Properties)
 
 Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
 based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
