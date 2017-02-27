@@ -65,7 +65,8 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                 try {
                     pluginsToRetain.add(descriptorCreator.findPluginForPrefix(prefix, session));
                 } catch (NoPluginFoundForPrefixException ex) {
-                    throw new MavenExecutionException("Unable to resolve plugin for prefix: " + prefix, ex);
+                    logger.warn("gitflow-helper-maven-plugin: Unable to resolve project plugin for prefix: " + prefix + " for goal: " + goal);
+//                    throw new MavenExecutionException("Unable to resolve plugin for prefix: " + prefix, ex);
                 }
             }
         }
@@ -128,7 +129,10 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                 logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + gitBranch + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
 
                 for (MavenProject project : session.getProjects()) {
-                    // Drop all the plugins from the build except for the gitflow-helper-maven-plugin.
+                    // Drop all the plugins from the build except for the gitflow-helper-maven-plugin, or plugins we
+                    // invoked goals for which could be mapped back to plugins in our project build.
+                    // Goals invoked from the commandline which cannot be mapped back to our project, will get warnings, but should still execute.
+                    // If someone is on 'master' and starts executing goals, we need to allow them to do that.
                     project.getBuildPlugins().removeAll(pluginsToDrop.get(project));
                 }
             }
