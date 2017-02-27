@@ -3,6 +3,7 @@ package com.e_gineering.maven.gitflowhelper;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
 import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
+import org.apache.maven.model.Repository;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -87,23 +88,38 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
      */
     protected ArtifactRepository getDeploymentRepository(final String altRepository) throws MojoExecutionException, MojoFailureException {
         Matcher matcher = ALT_REPO_SYNTAX_PATTERN.matcher(altRepository);
+        Repository candidate = null;
         if (!matcher.matches()) {
-            throw new MojoFailureException(altRepository, "Invalid syntax for repository.",
-                    "Invalid syntax for repository. Use \"id::layout::url::unique\".");
+            for (int i = 0; i < project.getRepositories().size(); i++) {
+                candidate = project.getRepositories().get(i);
+                if (candidate.getId().equals(altRepository)) {
+                    break;
+                }
+                candidate = null;
+            }
+
+            if (candidate == null) {
+                throw new MojoFailureException(altRepository, "Invalid syntax for repository or repository id not resolved..",
+                        "Invalid syntax for repository. Use \"id::layout::url::unique\" or only specify the \"id\".");
+            }
         }
 
         if (getLog().isDebugEnabled()) {
             getLog().debug("Getting maven deployment repository (to target artifacts) for: " + altRepository);
         }
 
-        String id = matcher.group(1).trim();
-        String layout = matcher.group(2).trim();
-        String url = matcher.group(3).trim();
-        boolean unique = Boolean.parseBoolean(matcher.group(4).trim());
+        if (candidate == null) {
+            String id = matcher.group(1).trim();
+            String layout = matcher.group(2).trim();
+            String url = matcher.group(3).trim();
+            boolean unique = Boolean.parseBoolean(matcher.group(4).trim());
 
-        ArtifactRepositoryLayout repoLayout = getLayout(layout);
+            ArtifactRepositoryLayout repoLayout = getLayout(layout);
 
-        return repositoryFactory.createDeploymentArtifactRepository(id, url, repoLayout, unique);
+            return repositoryFactory.createDeploymentArtifactRepository(id, url, repoLayout, unique);
+        } else {
+            return repositoryFactory.createDeploymentArtifactRepository(candidate.getId(), candidate.getUrl(), getLayout(candidate.getLayout()), candidate.getSnapshots().isEnabled());
+        }
     }
 
     /**
