@@ -45,6 +45,49 @@ All of the solutions to these issues are implemented independently in different 
         <developerConnection>scm:git:ssh://git@server/project/path.git</developerConnection>
     </scm>
     ...
+    <!-- Configure a local nexus mirror that won't act as a mirror for repos used as gitflow deployment targets. 
+         This can go in a default active profile in your ~/.m2/settings.xml
+    -->
+    <mirrors>
+        <mirror>
+            <mirrorOf>*,!localnexus-releases,!localnexus-stage,!localnexus-snapshots</mirrorOf>
+            <url>https://localnexus/nexus/content/groups/public</url>
+        </mirror>
+    </mirrors>
+    ...
+    <!-- Configure a set of repositories for publishing artifacts. Even if you share the same server id credentials,
+         It's a good idea to give these discrete ids. Otherwise if you use the 'update-stage-dependencies' you may get 
+         some strange behavior!
+         
+         This can go in a default active profile in your ~/.m2/settings.xml
+    -->
+    <repositories>
+        <repository>
+            <id>localnexus-releases</id>
+            <url>https://localnexus/nexus/content/repositories/releases</url>
+            <snapshots><enabled>false</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+        <repository>
+            <id>localnexus-stage</id>
+            <url>https://localnexus/nexus/content/repositories/test-releases</url>
+            <snapshots><enabled>false</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+        <repository>
+            <id>localnexus-snapshots</id>
+            <url>http://localnexus/nexus/content/repositories/snapshots</url>
+            <snapshots><enabled>true</enabled></snapshots>
+            <releases><enabled>false</enabled></releases>
+        </repository>
+        <repository>
+            <id>central</id>
+            <url>http://central</url>
+            <snapshots><enabled>true</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+    </repositories>    
+    ...
     <build>
         <plugins>
             <plugin>
@@ -53,12 +96,17 @@ All of the solutions to these issues are implemented independently in different 
                 <version>${gitflow.helper.plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <!-- These repository definitions expect id::layout::url::unique, for example
+                    <!--
+                         These repository definitions expect either a configured repository id, or an inline definition
+                         like 'id::layout::url::unique'
+                         
+                         For example:
+                         
                          release::default::https://some.server.path/content/repositories/test-releases::false
                     -->
-                    <releaseDeploymentRepository>${release.repository}</releaseDeploymentRepository>
-                    <stageDeploymentRepository>${stage.repository}</stageDeploymentRepository>
-                    <snapshotDeploymentRepository>${snapshot.repository}</snapshotDeploymentRepository>
+                    <releaseDeploymentRepository>localnexus-releases</releaseDeploymentRepository>
+                    <stageDeploymentRepository>localnexus-stage</stageDeploymentRepository>
+                    <snapshotDeploymentRepository>localnexus-snapshots</snapshotDeploymentRepository>
                 </configuration>
                 <executions>
                     <execution>
@@ -207,10 +255,13 @@ re-resolved (so you get the latest version from either the stage repository, or 
 
 It is **very important** if you're using this goal, that the **`stageDeploymentReposity` have a unique repository/server id**. 
 If you use the same ID for release, snapshot, and stage, every time you exeucte this goal, every release version 
-dependency will be purged and re-resolved. 
+dependency will be purged and re-resolved.
 
+If you have a local build / install of a release version, this goal will currently not update that package, by design.
+You will need to manually remove your local build (or have a newer version resolve from a remote) before this goal will
+purge it.
 
-## Goal: `tag-master` ("Automagic" Tagging for Master Branch Releases)
+# Goal: `tag-master` ("Automagic" Tagging for Master Branch Releases)
 
 In a gitflow environment, a commit to a master branch should trigger a job to build on the master branch, which would result in the release being tagged if successful.
  
