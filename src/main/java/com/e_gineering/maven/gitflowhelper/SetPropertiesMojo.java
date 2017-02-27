@@ -31,6 +31,18 @@ public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
     private File masterBranchPropertyFile;
 
     /**
+     * Properties to be applied if executing against a support branch
+     */
+    @Parameter(property = "supportBranchProperties")
+    private Properties supportBranchProperties;
+
+    /**
+     * A Property file to load if executing against the support branch
+     */
+    @Parameter(property = "supportBranchPropertyFile")
+    private File supportBranchPropertyFile;
+
+    /**
      * Properties to be applied if executing against a release branch
      */
     @Parameter(property = "releaseBranchProperties")
@@ -114,6 +126,11 @@ public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
         Properties toInject = null;
         File toLoad = null;
         switch (type) {
+            case SUPPORT: {
+                toInject = supportBranchProperties;
+                toLoad = supportBranchPropertyFile;
+                break;
+            }
             case MASTER: {
                 toInject = masterBranchProperties;
                 toLoad = masterBranchPropertyFile;
