@@ -12,6 +12,7 @@ It does so by:
     * Enabling the decoupling of repository deployment and execution environment delivery based on the current git branch.
  * Automated deployment, promotion, and delivery of projects without the [maven-release-plugin](http://maven.apache.org/maven-release/maven-release-plugin/) or some other [*almost there* solution](https://axelfontaine.com/blog/final-nail.html).
  * Customizing maven project and system properties based upon the current branch being built. This allows test cases to target different execution environments without changing the artifact results.
+ * Enabling automatic purging and resolving (force update) of 'release' and 'hotfix' release versioned dependencies resolved from the 'stage' repository.
 
 # Why would I want to use this?
 
@@ -64,13 +65,14 @@ All of the solutions to these issues are implemented independently in different 
                         <goals>
                             <goal>enforce-versions</goal>
                             <goal>retarget-deploy</goal>
+                            <goal>update-stage-dependencies</goal>
+                            <goal>set-properties</goal>
                             <goal>tag-master</goal>
                             <goal>promote-master</goal>
-                            <goal>set-properties</goal>
                         </goals>
                         <configuration>
                             <masterBranchPropertyFile>foo/bar/prod.props</masterBranchPropertyFile>
-			    <supportBranchPropertyFile>foo/bar/support.props</supportBranchPropertyFile>
+                            <supportBranchPropertyFile>foo/bar/support.props</supportBranchPropertyFile>
                             <hotfixBranchPropertyFile>foo/bar/emer.props</hotfixBranchPropertyFile>
                             <releaseBranchPropertyFile>foo/bar/test.props</releaseBranchPropertyFile>
                             <developmentBranchPropertyFile>foo/bar/dev.props</developmentBranchPropertyFile>
@@ -180,6 +182,34 @@ Can be replaced with the following plugin configuration, which also introduces t
         ...
     </build>
 
+
+## Goal: `set-properties` (Dynamically Set Maven Project / System Properties)
+
+Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
+based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
+a build, or needing to setup / configure datasources for automated tests to run against.
+
+The `set-properties` goal allows for setting project (or system) properties, dynamically based on the detected git
+branch being built. Properties can be specified as a Properties collection in plugin configuration, or can be loaded
+from a property file during the build. Both property key names and property values will have placeholders resolved.
+
+Multiple executions can be configured, and each execution can target different scopes (system or project), and can load
+properties from files with an assigned keyPrefix, letting you name-space properties from execution ids.
+
+
+## Goal: `update-stage-dependencies` (Force update of dependency staged Releases)
+
+The maven `-U` command line switch does a fine job of updating SNAPSHOT versions from snapshot repositories, there is no
+built-in way to force maven to re-resolve non-snapshot release versions. This goal addresses that shortcoming in a fairly
+straight-forward manner. Any release version dependency of the project which was provided to the local repository by a
+remote repository with the same ID as the `<stageDeploymentRepository>`, will be purged from the local repository and 
+re-resolved (so you get the latest version from either the stage repository, or your release repository).
+
+It is **very important** if you're using this goal, that the **`stageDeploymentReposity` have a unique repository/server id**. 
+If you use the same ID for release, snapshot, and stage, every time you exeucte this goal, every release version 
+dependency will be purged and re-resolved. 
+
+
 ## Goal: `tag-master` ("Automagic" Tagging for Master Branch Releases)
 
 In a gitflow environment, a commit to a master branch should trigger a job to build on the master branch, which would result in the release being tagged if successful.
@@ -271,16 +301,3 @@ it's building. The attach-deploy will 'clean' the maven project, then download t
 that the first build deployed into. Once they're attached to the project, the `jboss-as:deploy-only` goal will deliver
 the artifacts built by the first job into a jboss application server.
 
-
-## Goal: `set-properties` (Dynamically Set Maven Project / System Properties)
-
-Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
-based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
-a build, or needing to setup / configure datasources for automated tests to run against.
-
-The `set-properties` goal allows for setting project (or system) properties, dynamically based on the detected git
-branch being built. Properties can be specified as a Properties collection in plugin configuration, or can be loaded
-from a property file during the build. Both property key names and property values will have placeholders resolved.
-
-Multiple executions can be configured, and each execution can target different scopes (system or project), and can load
-properties from files with an assigned keyPrefix, letting you name-space properties from execution ids.
