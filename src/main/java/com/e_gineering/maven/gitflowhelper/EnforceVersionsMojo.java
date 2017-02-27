@@ -28,10 +28,17 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
                     throw new MojoFailureException("The current git branch: [" + gitBranch + "] is defined as a release branch. The maven project version: [" + project.getVersion() + "] is currently a snapshot version.");
                 }
 
-                // Expect the last group on non-master branches to match (exactly) the current projectVersion. (only release / hotfix branches)
-                if (gitMatcher.groupCount() > 0 && !GitBranchType.MASTER.equals(type)) {
-                    if (!gitMatcher.group(gitMatcher.groupCount()).trim().equals(project.getVersion().trim())) {
+                // Non-master version branches require a pom version match of some kind to the branch subgroups.
+                if (gitMatcher.groupCount() > 0) {
+                    // HOTFIX and RELEASE branches require an exact match to the last subgroup.
+                    if ((GitBranchType.RELEASE.equals(type) || GitBranchType.HOTFIX.equals(type)) && !gitMatcher.group(gitMatcher.groupCount()).trim().equals(project.getVersion().trim())) {
                         throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to be: [" + gitMatcher.group(gitMatcher.groupCount()).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
+                    }
+
+                    // SUPPORT branches require a 'starts with' match of the maven project version to the subgroup.
+                    // ex: /origin/support/3.1 must have a maven version that starts with "3.1", ala: "3.1.2"
+                    if (GitBranchType.SUPPORT.equals(type) && !project.getVersion().startsWith(gitMatcher.group(gitMatcher.groupCount()).trim())) {
+                        throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to start with: [" + gitMatcher.group(gitMatcher.groupCount()).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
                     }
                 }
             }

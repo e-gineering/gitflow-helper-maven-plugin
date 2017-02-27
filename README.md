@@ -7,11 +7,12 @@ It does so by:
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
  * Coercing Maven to gracefully support the gitflow workflow without imposing complex CI job configurations or complex Maven setups.
     * Setting distributionManagement repositories (for things like [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/)) based upon the current git branch.
-    * SCM tagging builds for the master branch. You can use the project SCM definition, or if you omit it, you can resolve the CI server's repository connection information. (Zero Maven scm configuration necessary)
+    * SCM tagging builds for master and support branches. You can use the project SCM definition, or if you omit it, you can resolve the CI server's repository connection information. (Zero Maven scm configuration necessary)
     * Promoting existing tested (staged) artifacts for release, rather than re-building the artifacts. Eliminates the risk of accidental master merges or commits resulting in untested code being released, and provides digest hash traceability for the history of artifacts.
     * Enabling the decoupling of repository deployment and execution environment delivery based on the current git branch.
  * Automated deployment, promotion, and delivery of projects without the [maven-release-plugin](http://maven.apache.org/maven-release/maven-release-plugin/) or some other [*almost there* solution](https://axelfontaine.com/blog/final-nail.html).
  * Customizing maven project and system properties based upon the current branch being built. This allows test cases to target different execution environments without changing the artifact results.
+ * Enabling automatic purging and resolving (force update) of 'release' and 'hotfix' release versioned dependencies resolved from the 'stage' repository.
 
 # Why would I want to use this?
 
@@ -19,9 +20,9 @@ This plugin solves a few specific issues common in consolidated Hudson/Jenkins C
 
  1. Ensure the developers are following the (git branching) project version rules, and fail the build if they are not.
  2. Enable the maven-deploy-plugin to target a snapshots, test-releases, and releases repository.
- 3. _Copy_ (rather than rebuild) the tested artifacts from the test-releases repository to the release repository, without doing a full project rebuild from the master branch.
+ 3. _Copy_ (rather than rebuild) the tested artifacts from the test-releases repository to the release repository, without doing a full project rebuild from the master or support branches.
  4. Set arbitrary project properties based upon the type of GIT branch being built. 
- 5. Reliably tag deploy builds from the 'master' branch
+ 5. Reliably tag deploy builds from the master and support branches
  6. Enable split 'deploy' vs. 'deliver' maven CI job configuration, without rebuilding artifacts for the 'deliver' phase.
  
 In addition to supporting these goals for the project, this plugin does it in a manner that tries to be as effortless (yet configurable) as possible.
@@ -44,6 +45,49 @@ All of the solutions to these issues are implemented independently in different 
         <developerConnection>scm:git:ssh://git@server/project/path.git</developerConnection>
     </scm>
     ...
+    <!-- Configure a local nexus mirror that won't act as a mirror for repos used as gitflow deployment targets. 
+         This can go in a default active profile in your ~/.m2/settings.xml
+    -->
+    <mirrors>
+        <mirror>
+            <mirrorOf>*,!localnexus-releases,!localnexus-stage,!localnexus-snapshots</mirrorOf>
+            <url>https://localnexus/nexus/content/groups/public</url>
+        </mirror>
+    </mirrors>
+    ...
+    <!-- Configure a set of repositories for publishing artifacts. Even if you share the same server id credentials,
+         It's a good idea to give these discrete ids. Otherwise if you use the 'update-stage-dependencies' you may get 
+         some strange behavior!
+         
+         This can go in a default active profile in your ~/.m2/settings.xml
+    -->
+    <repositories>
+        <repository>
+            <id>localnexus-releases</id>
+            <url>https://localnexus/nexus/content/repositories/releases</url>
+            <snapshots><enabled>false</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+        <repository>
+            <id>localnexus-stage</id>
+            <url>https://localnexus/nexus/content/repositories/test-releases</url>
+            <snapshots><enabled>false</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+        <repository>
+            <id>localnexus-snapshots</id>
+            <url>http://localnexus/nexus/content/repositories/snapshots</url>
+            <snapshots><enabled>true</enabled></snapshots>
+            <releases><enabled>false</enabled></releases>
+        </repository>
+        <repository>
+            <id>central</id>
+            <url>http://central</url>
+            <snapshots><enabled>true</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+    </repositories>    
+    ...
     <build>
         <plugins>
             <plugin>
@@ -52,24 +96,31 @@ All of the solutions to these issues are implemented independently in different 
                 <version>${gitflow.helper.plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <!-- These repository definitions expect id::layout::url::unique, for example
+                    <!--
+                         These repository definitions expect either a configured repository id, or an inline definition
+                         like 'id::layout::url::unique'
+                         
+                         For example:
+                         
                          release::default::https://some.server.path/content/repositories/test-releases::false
                     -->
-                    <releaseDeploymentRepository>${release.repository}</releaseDeploymentRepository>
-                    <stageDeploymentRepository>${stage.repository}</stageDeploymentRepository>
-                    <snapshotDeploymentRepository>${snapshot.repository}</snapshotDeploymentRepository>
+                    <releaseDeploymentRepository>localnexus-releases</releaseDeploymentRepository>
+                    <stageDeploymentRepository>localnexus-stage</stageDeploymentRepository>
+                    <snapshotDeploymentRepository>localnexus-snapshots</snapshotDeploymentRepository>
                 </configuration>
                 <executions>
                     <execution>
                         <goals>
                             <goal>enforce-versions</goal>
                             <goal>retarget-deploy</goal>
+                            <goal>update-stage-dependencies</goal>
+                            <goal>set-properties</goal>
                             <goal>tag-master</goal>
                             <goal>promote-master</goal>
-                            <goal>set-properties</goal>
                         </goals>
                         <configuration>
                             <masterBranchPropertyFile>foo/bar/prod.props</masterBranchPropertyFile>
+                            <supportBranchPropertyFile>foo/bar/support.props</supportBranchPropertyFile>
                             <hotfixBranchPropertyFile>foo/bar/emer.props</hotfixBranchPropertyFile>
                             <releaseBranchPropertyFile>foo/bar/test.props</releaseBranchPropertyFile>
                             <developmentBranchPropertyFile>foo/bar/dev.props</developmentBranchPropertyFile>
@@ -92,7 +143,7 @@ One common stumbling block for teams adjusting to gitflow with Maven projects is
 In practice, the Maven versions should:
  
  * Be synchronized with release branch and hotfix branch names.
- * Never be -SNAPSHOT in the master branch, release, or hotfix branches.
+ * Never be -SNAPSHOT in the master, support, release, or hotfix branches.
  * Always be -SNAPSHOT in the develop branch.
  * Be irrelevant if there's no git branch resolvable from your environment.
 
@@ -108,6 +159,7 @@ The following properties change the behavior of this goal:
 | -------------------- | ------------- | --------------------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | n/a | Maven property expression to resolve in order to determine the current git branch |
 | masterBranchPattern  | (origin/)?master | No | Regex. When matched, signals the master branch is being built. |
+| supportBranchPattern | (origin/)?support/(.*) | No | Regex. When matches, signals a support branch (long term master-equivalent for older release) being built. Last subgroup, if present, must be start of the Maven project version. |
 | releaseBranchPattern | (origin/)?release/(.*) | No | Regex. When matched, signals a release branch being built. Last subgroup, if present, must match the Maven project version. |
 | hotfixBranchPattern  | (origin/)?hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Last subgroup, if present, must match the Maven project version. |
 | developmentBranchPattern | (origin/)?develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
@@ -127,9 +179,9 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 | Property | Default Value | Description | 
 | -------- | ------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
-| releaseDeploymentRepository | n/a | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern`) |
-| stageDeploymentRepository | n/a | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern` | 
-| snapshotDeploymentRepository | n/a | The repository to use for snapshots. (Builds matching `developmentBranchPattern` |
+| releaseDeploymentRepository | n/a | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern` or `supportBranchPattern`) |
+| stageDeploymentRepository | n/a | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern`) | 
+| snapshotDeploymentRepository | n/a | The repository to use for snapshots. (Builds matching `developmentBranchPattern`) |
 
 **The repository properties should follow the following format**, `id::layout::url::uniqueVersion`.
 
@@ -178,13 +230,44 @@ Can be replaced with the following plugin configuration, which also introduces t
         ...
     </build>
 
-## Goal: `tag-master` ("Automagic" Tagging for Master Branch Releases)
+
+## Goal: `set-properties` (Dynamically Set Maven Project / System Properties)
+
+Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
+based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
+a build, or needing to setup / configure datasources for automated tests to run against.
+
+The `set-properties` goal allows for setting project (or system) properties, dynamically based on the detected git
+branch being built. Properties can be specified as a Properties collection in plugin configuration, or can be loaded
+from a property file during the build. Both property key names and property values will have placeholders resolved.
+
+Multiple executions can be configured, and each execution can target different scopes (system or project), and can load
+properties from files with an assigned keyPrefix, letting you name-space properties from execution ids.
+
+
+## Goal: `update-stage-dependencies` (Force update of dependency staged Releases)
+
+The maven `-U` command line switch does a fine job of updating SNAPSHOT versions from snapshot repositories, there is no
+built-in way to force maven to re-resolve non-snapshot release versions. This goal addresses that shortcoming in a fairly
+straight-forward manner. Any release version dependency of the project which was provided to the local repository by a
+remote repository with the same ID as the `<stageDeploymentRepository>`, will be purged from the local repository and 
+re-resolved (so you get the latest version from either the stage repository, or your release repository).
+
+It is **very important** if you're using this goal, that the **`stageDeploymentReposity` have a unique repository/server id**. 
+If you use the same ID for release, snapshot, and stage, every time you exeucte this goal, every release version 
+dependency will be purged and re-resolved.
+
+If you have a local build / install of a release version, this goal will currently not update that package, by design.
+You will need to manually remove your local build (or have a newer version resolve from a remote) before this goal will
+purge it.
+
+# Goal: `tag-master` ("Automagic" Tagging for Master Branch Releases)
 
 In a gitflow environment, a commit to a master branch should trigger a job to build on the master branch, which would result in the release being tagged if successful.
  
-The `tag-master` goal executes the [maven-scm-plugin tag goal](https://maven.apache.org/scm/maven-scm-plugin/tag-mojo.html) when the 
-`gitBranchExpression` resolves to a value matching the `masterBranchPattern` regular expression. To determine the SCM URL to use, the plugin looks for a 
-`developerConnection` or `connection` information in an SCM block, and if not found the `gitURLExpression` is evaluated at run-time. 
+The `tag-master` goal invokes the SCM manager to tag the source repository when `gitBranchExpression` resolves to a value matching the `masterBranchPattern` or
+`supportBranchPattern` regular expressions. To determine the SCM URL to use, the plugin looks for a `developerConnection` or `connection` information in an SCM block
+ and if not found the `gitURLExpression` is evaluated at run-time. 
 The default expression, `${env.GIT_URL}`, is one that is commonly provided by Jenkins & Hudson. 
 
 The following properties can be configured for this goal:
@@ -193,35 +276,37 @@ The following properties can be configured for this goal:
 | -------------------- | ------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
 | gitURLExpression     | current git branch resolved from SCM or ${env.GIT_URL} | Maven property expression to resolve for the GIT URL connection to use. |
-| masterBranchPattern  | (origin/)?master | Regex. When matched against the resolved value of `gitBranchExpression` this plugin executes the scm:tag goal using the `gitURLExpression` to resolve the git URL to use. |
+| masterBranchPattern  | (origin/)?master | Regex. When matched against the resolved value of `gitBranchExpression` this plugin tags the SCM using the `gitURLExpression` to resolve the git URL to use. |
+| supportBranchPattern | (origin/)?support/(.*) | Regex. When matches against the resolved value of `gitBranchExpression` this plugin tags the SCM using the `gitURLExpression` to resolve the git URL to use. | 
 | tag                  | ${project.version} | An expression to use for the SCM tag. |
 
 
 ## Goal: `promote-master` and the Build Extension. (Copy Staged Artifacts to Releases)
 
 With gitflow, a new version of a product is prepared in the `release/.*` and `hotfix/.*` branches of the project.
-These artifacts are put through their paces and validated before the merge back into the master branch.
+These artifacts are put through their paces and validated before the merge back into the master branch or a support branch.
 
 In a traditional CI approach, the merge to master triggers a build, which gets deployed to a releases repository, and perhaps deployed to an execution 
 environment. This approach has the consequence of deployed artifacts in the release repository having never been tested in a stage or test environment.
 Sure, you've tested the branch, but the actual artifact from the stage repository is what you *really* want to have deployed to the release repository.
 
-If stage artifacts are copied into the releases repository when a master commit occurs (ex: the merge from release/2.3.4.5 into master) then the 
+If stage artifacts are copied into the releases repository when a master (or support branch) commit occurs (ex: the merge from release/2.3.4.5 into master) then the 
 artifacts will have the same SHA and MD5 hash, and you'd have full trace-ability for the lifecycle of the artifacts. You'd also have the added benefit 
 of achieving the ideal situation for gitflow deployment, where releases originate from the branches created for them, and code is **never deployed  
 directly from master**. Rather, master is really only used for tracking releases and branching to support production issues.
 
 To accomplish this the `promote-master` goal and a Maven build extension work together.
 
-With the build extension added to your project, any build where the `gitBranchExpression` matches the `masterBranchPattern` will have it's
-build lifecycle (plugins, goals, etc) altered. Any plugin other than the gitflow-helper-maven-plugin, or the maven-deploy-plugin will be ignored 
-(removed from the project reactor). This allows us to enforce the ideal that code should never be built in the master branch.
+With the build extension added to your project, any build where the `gitBranchExpression` matches the `masterBranchPattern` or `supportBranchPattern` will have it's
+build lifecycle (plugins, goals, etc) altered. Any plugin other than the gitflow-helper-maven-plugin, the maven-deploy-plugin, or plugins with goals
+ explicitly referenced on the command line  will be ignored (removed from the project reactor). 
+This allows us to enforce the ideal that code should never be built in the master branch.
 
-The `promote-master` goal executes when the `gitBranchExpression` resolves to a value matching the `masterBranchPattern` regular expression.
+The `promote-master` goal executes when the `gitBranchExpression` resolves to a value matching the `masterBranchPattern` or `supportBranchPattern` regular expression.
  
 This goal resolves (and downloads) the artifacts matching the current `${project.version}` from the stage repository, then attaches them to the 
 current project in the Maven build. This lets later plugins in the lifecycle (like the deploy plugin, which the extension won't remove) make use of 
-artifacts provided from the stage repository when it uploads to the releases repository. Effectively, this makes a build in master copy the artifacts from 
+artifacts provided from the stage repository when it uploads to the releases repository. Effectively, this makes a build in master (or support) copy the artifacts from 
 the stage repository to the releases repository.
 
 
@@ -243,6 +328,7 @@ The following table describes the git branch expression -> repository used for r
 | Git Branch Expression | Source Repository for re-attachment |
 | --------------------- | ---------- |
 | masterBranchPattern   | release    |
+| supportBranchPattern  | release    |
 | releaseBranchPattern  | stage      |
 | hotfixBranchPattern   | stage      |
 | developmentBranchPattern | snapshots | 
@@ -266,16 +352,3 @@ it's building. The attach-deploy will 'clean' the maven project, then download t
 that the first build deployed into. Once they're attached to the project, the `jboss-as:deploy-only` goal will deliver
 the artifacts built by the first job into a jboss application server.
 
-
-## Goal: `set-properties` (Dynamically Set Maven Project / System Properties)
-
-Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
-based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
-a build, or needing to setup / configure datasources for automated tests to run against.
-
-The `set-properties` goal allows for setting project (or system) properties, dynamically based on the detected git
-branch being built. Properties can be specified as a Properties collection in plugin configuration, or can be loaded
-from a property file during the build. Both property key names and property values will have placeholders resolved.
-
-Multiple executions can be configured, and each execution can target different scopes (system or project), and can load
-properties from files with an assigned keyPrefix, letting you name-space properties from execution ids.

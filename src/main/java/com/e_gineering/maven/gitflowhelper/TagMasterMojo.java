@@ -27,7 +27,7 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
 
     @Override
     protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
-        if (project.isExecutionRoot() && type.equals(GitBranchType.MASTER)) {
+        if (project.isExecutionRoot() && (type.equals(GitBranchType.MASTER) || type.equals(GitBranchType.SUPPORT))) {
             if (gitURLExpression == null) {
                 gitURLExpression = ScmUtils.resolveUrlOrExpression(project, getLog());
             }

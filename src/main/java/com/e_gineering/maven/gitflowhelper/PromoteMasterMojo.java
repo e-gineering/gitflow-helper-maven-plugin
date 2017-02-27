@@ -28,6 +28,7 @@ public class PromoteMasterMojo extends AbstractGitflowBasedRepositoryMojo {
                 break;
             }
 
+            case SUPPORT:
             case MASTER: {
                 getLog().info("Resolving & Reattaching existing artifacts from stageDeploymentRepository [" + stageDeploymentRepository + "]");
 
