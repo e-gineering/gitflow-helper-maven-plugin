@@ -33,9 +33,6 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     @Parameter(defaultValue = "(origin/)?master", property = "masterBranchPattern", required = true)
     private String masterBranchPattern;
 
-    @Parameter(defaultValue = "(origin/)?support/(.*)", property = "supportBranchPattern", required = true)
-    private String supportBranchPattern;
-
     @Parameter(defaultValue = "(origin/)?release/(.*)", property = "releaseBranchPattern", required = true)
     private String releaseBranchPattern;
 
@@ -94,8 +91,6 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
              */
             if (gitBranch.matches(masterBranchPattern)) {
                 logExecute(GitBranchType.MASTER, gitBranch, masterBranchPattern);
-            } else if (gitBranch.matches(supportBranchPattern)) {
-                logExecute(GitBranchType.SUPPORT, gitBranch, supportBranchPattern);
             } else if (gitBranch.matches(releaseBranchPattern)) {
                 logExecute(GitBranchType.RELEASE, gitBranch, releaseBranchPattern);
             } else if (gitBranch.matches(hotfixBranchPattern)) {
