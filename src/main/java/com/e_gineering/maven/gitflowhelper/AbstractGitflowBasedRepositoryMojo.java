@@ -87,7 +87,8 @@ public abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflow
         if (!matcher.matches()) {
             for (int i = 0; i < project.getRepositories().size(); i++) {
                 candidate = project.getRepositories().get(i);
-                if (candidate.getId().equals(altRepository)) {
+                getLog().debug("Checking defined repository ID: " + candidate.getId().trim() + " against: " + altRepository.trim());
+                if (candidate.getId().trim().equals(altRepository.trim())) {
                     break;
                 }
                 candidate = null;
