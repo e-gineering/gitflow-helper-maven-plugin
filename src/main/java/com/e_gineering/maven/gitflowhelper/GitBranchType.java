@@ -7,11 +7,12 @@ import java.util.EnumSet;
  */
 public enum GitBranchType {
     MASTER,
+    SUPPORT,
     RELEASE,
     HOTFIX,
     DEVELOPMENT,
     OTHER,
     UNDEFINED;
 
-    static final EnumSet<GitBranchType> VERSIONED_TYPES = EnumSet.of(GitBranchType.MASTER, GitBranchType.RELEASE, GitBranchType.HOTFIX);
+    static final EnumSet<GitBranchType> VERSIONED_TYPES = EnumSet.of(GitBranchType.MASTER, GitBranchType.SUPPORT, GitBranchType.RELEASE, GitBranchType.HOTFIX);
 }

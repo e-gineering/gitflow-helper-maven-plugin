@@ -16,7 +16,9 @@ public class AttachDeployedArtifactsMojo extends AbstractGitflowBasedRepositoryM
     @Override
     protected void execute(GitBranchType type, String gitBranch, String branchPattern) throws MojoExecutionException, MojoFailureException {
         switch (type) {
-            case MASTER: {
+            case MASTER:
+            case SUPPORT:
+            {
                 getLog().info("Attaching artifacts from release repository...");
                 attachExistingArtifacts(releaseDeploymentRepository, true);
                 break;
