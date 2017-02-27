@@ -60,7 +60,7 @@ public class UpdateStageDependenciesMojo extends AbstractGitflowBasedRepositoryM
 
                     // If the result has a file... and the getRepository() matched the stage repo id...
                     if (localResult.getFile() != null && localResult.getRepository() != null) {
-                        getLog().info("Dependency: " + dependency + " from remote repository: " + localResult.getRepository() + " will be purged and re-resolved.");
+                        getLog().info("Purging: " + dependency + " from remote repository: " + localResult.getRepository() + ".");
                         File deleteTarget = new File(localRepositoryManager.getRepository().getBasedir(), localRepositoryManager.getPathForLocalArtifact(dependency.getArtifact()));
 
                         if (deleteTarget.isDirectory()) {
@@ -83,7 +83,9 @@ public class UpdateStageDependenciesMojo extends AbstractGitflowBasedRepositoryM
 
         if (itemsPurged) {
             try {
+                getLog().info("Resolving purged dependencies...");
                 dependenciesResolver.resolve(new DefaultDependencyResolutionRequest(project, reresolveSession));
+                getLog().info("All stage dependencies purged and re-resolved.");
             } catch (DependencyResolutionException e) {
                 throw new MojoExecutionException("Post-purge dependency resolution failed!", e);
             }
