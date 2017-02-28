@@ -50,6 +50,7 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
 
         // Look for a gitflow-helper-maven-plugin, so we can determine what the gitBranchExpression and masterBranchPattern are...
         String masterBranchPattern = null;
+        String supportBranchPattern = null;
 
         String gitBranchExpression = null;
         boolean pluginFound = false;
@@ -88,6 +89,10 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                         masterBranchPattern = extractPluginConfigValue("masterBranchPattern", plugin);
                     }
 
+                    if (supportBranchPattern == null) {
+                        supportBranchPattern = extractPluginConfigValue("supportBranchPattern", plugin);
+                    }
+
                     if (gitBranchExpression == null) {
                         gitBranchExpression = extractPluginConfigValue("gitBranchExpression", plugin);
                     }
@@ -109,9 +114,15 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
         if (pluginFound) {
             if (masterBranchPattern == null) {
                 logger.debug("Using default master branch Pattern.");
-                masterBranchPattern = "origin/master";
+                masterBranchPattern = "(origin/)?master";
             }
             logger.debug("Master Branch Pattern: " + masterBranchPattern);
+
+            if (supportBranchPattern == null) {
+                logger.debug("Using default support branch Pattern.");
+                supportBranchPattern = "(origin/)?support/(.*)";
+            }
+            logger.debug("Support Branch Pattern: " + supportBranchPattern);
 
             if (gitBranchExpression == null) {
                 logger.debug("Using default branch expression resolver.");
@@ -124,10 +135,17 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
             String gitBranch = pr.resolveValue(gitBranchExpression, session.getCurrentProject().getProperties(), systemEnvVars);
             logger.info("gitflow-helper-maven-plugin: Build Extension resolved gitBranchExpression: " + gitBranchExpression + " to: " + gitBranch);
 
-            // Test to see if the current GIT_BRANCH matches the masterBranchPattern...
+            // If the current git branch matches the master or support branch, prune the build plugin list.
+            boolean pruneBuild = false;
             if (gitBranch != null && gitBranch.matches(masterBranchPattern)) {
                 logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + gitBranch + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
+                pruneBuild = true;
+            } else if (gitBranch != null && gitBranch.matches(supportBranchPattern)) {
+                logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + gitBranch + "] matches supportBranchPattern: [" + supportBranchPattern + "]");
+                pruneBuild = true;
+            }
 
+            if (pruneBuild) {
                 for (MavenProject project : session.getProjects()) {
                     // Drop all the plugins from the build except for the gitflow-helper-maven-plugin, or plugins we
                     // invoked goals for which could be mapped back to plugins in our project build.
