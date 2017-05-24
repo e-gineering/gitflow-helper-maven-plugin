@@ -35,7 +35,11 @@ public abstract class ScmUtils {
             if (StringUtils.isBlank(connectionUrl)) {
                 connectionUrl = project.getScm().getConnection();
             }
-            return connectionUrl;
+
+            // Issue #74, missing an emtpy / null check before returning.
+            if (!StringUtils.isBlank(connectionUrl)) {
+                return connectionUrl;
+            }
         }
 
         return DEFAULT_URL_EXPRESSION;
