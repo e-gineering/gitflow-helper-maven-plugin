@@ -2,8 +2,8 @@ package com.e_gineering.maven.gitflowhelper;
 
 import com.google.common.base.Joiner;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.logging.Logger;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.resolution.ArtifactResult;
 
@@ -15,47 +15,36 @@ import static com.google.common.base.Strings.emptyToNull;
 /**
  * A helper factory for creating maven (GroupId, ArtifactId, Extension, Classifier, Version) coordinates.
  */
-class GavCoordinateFactory {
-    // TODO(somebody): Consider using maven @Component to make this an injectable component in the mojo
+class DefaultGavCoordinateHelper implements GavCoordinateHelper {
 
     private static final Joiner GAV_JOINER = Joiner.on(':').skipNulls();
 
-    private final RepositorySystemSession session;
+    private final Logger log;
 
     private final MavenProject project;
-    private final Log log;
+
+    private final RepositorySystemSession session;
 
     /**
-     * Creates a new {@link GavCoordinateFactory}.
+     * Creates a new {@link DefaultGavCoordinateHelperFactory}.
      *
      * @param session the repository session
      * @param project the project
      * @param log     the logger
      */
-    GavCoordinateFactory(RepositorySystemSession session, MavenProject project, Log log) {
+    DefaultGavCoordinateHelper(RepositorySystemSession session, MavenProject project, Logger log) {
         this.session = checkNotNull(session, "session must not be null");
         this.project = checkNotNull(project, "project must not be null");
         this.log = checkNotNull(log, "log must not be null");
     }
 
-    /**
-     * Get GAV coordinates for the {@link ArtifactResult}.
-     *
-     * @param result the result
-     * @return the GAV coordinate string
-     */
-    String getCoordinates(ArtifactResult result) {
+    @Override
+    public String getCoordinates(ArtifactResult result) {
         return getCoordinates(result.getArtifact());
     }
 
-    /**
-     * Get GAV coordinates for the {@link org.eclipse.aether.artifact.Artifact}.
-     *
-     * @param artifact the artifact
-     * @return the GAV coordinate string
-     */
-    @SuppressWarnings("WeakerAccess")
-    String getCoordinates(org.eclipse.aether.artifact.Artifact artifact) {
+    @Override
+    public String getCoordinates(org.eclipse.aether.artifact.Artifact artifact) {
         return getCoordinates(
                 emptyToNull(artifact.getGroupId()),
                 emptyToNull(artifact.getArtifactId()),
@@ -65,13 +54,8 @@ class GavCoordinateFactory {
         );
     }
 
-    /**
-     * Get GAV coordinates for the {@link Artifact}.
-     *
-     * @param artifact the artifact
-     * @return the GAV coordinate string
-     */
-    String getCoordinates(Artifact artifact) {
+    @Override
+    public String getCoordinates(Artifact artifact) {
         log.debug("   Encoding Coordinates For: " + artifact);
 
         // Get the extension according to the artifact type.

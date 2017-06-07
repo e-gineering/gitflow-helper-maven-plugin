@@ -80,7 +80,17 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     @Component(role = ArtifactRepositoryLayout.class)
     private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
 
-    private GavCoordinateFactory gavCoordinateFactory;
+    @Component
+    private GavCoordinateHelperFactory gavCoordinateFactory;
+
+    private GavCoordinateHelper gavCoordinateHelper;
+
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException {
+        gavCoordinateHelper = gavCoordinateFactory.using(session);
+
+        super.execute();
+    }
 
     /**
      * Builds an ArtifactRepository for targeting deployments.
@@ -216,7 +226,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     }
 
     private void catalogArtifact(PrintWriter writer, Artifact artifact) {
-        String coords = gavCoordinateFactory().getCoordinates(artifact);
+        String coords = gavCoordinateHelper.getCoordinates(artifact);
         getLog().info("Cataloging: " + coords);
         writer.println(coords);
     }
@@ -320,7 +330,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
         }
 
         // Get the current build artifact coordinates, so that we replace rather than re-attach.
-        String projectArtifactCoordinates = gavCoordinateFactory().getCoordinates(project.getArtifact());
+        String projectArtifactCoordinates = gavCoordinateHelper.getCoordinates(project.getArtifact());
         getLog().debug("Current Project Coordinates: " + projectArtifactCoordinates);
 
         // For each artifactResult, copy it to the build directory,
@@ -331,12 +341,12 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                 FileUtils.copyFileToDirectory(artifactResult.getArtifact().getFile(), buildDirectory);
                 artifactResult.setArtifact(artifactResult.getArtifact().setFile(new File(buildDirectory, artifactResult.getArtifact().getFile().getName())));
 
-                if (gavCoordinateFactory().getCoordinates(artifactResult).equals(projectArtifactCoordinates)) {
+                if (gavCoordinateHelper.getCoordinates(artifactResult).equals(projectArtifactCoordinates)) {
                     getLog().debug("    Setting primary artifact: " + artifactResult.getArtifact().getFile());
                     project.getArtifact().setFile(artifactResult.getArtifact().getFile());
                 } else {
                     getLog().debug(
-                            "    Attaching artifact: " + gavCoordinateFactory().getCoordinates(artifactResult) + " "
+                            "    Attaching artifact: " + gavCoordinateHelper.getCoordinates(artifactResult) + " "
                                     + artifactResult.getArtifact().getFile());
                     projectHelper.attachArtifact(project, artifactResult.getArtifact().getExtension(), artifactResult.getArtifact().getClassifier(), artifactResult.getArtifact().getFile());
                 }
@@ -387,13 +397,5 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                && project.getArtifact().getFile() != null
                && project.getArtifact().getFile().exists()
                && project.getArtifact().getFile().isFile();
-    }
-
-    private GavCoordinateFactory gavCoordinateFactory() {
-        if (gavCoordinateFactory == null) {
-            // TODO(somebody): this could probably be nicely injected as a maven component
-            gavCoordinateFactory = new GavCoordinateFactory(session, project, getLog());
-        }
-        return gavCoordinateFactory;
     }
 }
