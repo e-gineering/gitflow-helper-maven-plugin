@@ -29,7 +29,7 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
                 }
 
                 // Non-master version branches require a pom version match of some kind to the branch subgroups.
-                if (gitMatcher.groupCount() > 0) {
+                if (gitMatcher.groupCount() > 0 && gitMatcher.group(gitMatcher.groupCount()) != null) {
                     // HOTFIX and RELEASE branches require an exact match to the last subgroup.
                     if ((GitBranchType.RELEASE.equals(type) || GitBranchType.HOTFIX.equals(type)) && !gitMatcher.group(gitMatcher.groupCount()).trim().equals(project.getVersion().trim())) {
                         throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to be: [" + gitMatcher.group(gitMatcher.groupCount()).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
