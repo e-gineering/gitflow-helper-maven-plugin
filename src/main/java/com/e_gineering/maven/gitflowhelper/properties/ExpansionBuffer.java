@@ -49,7 +49,8 @@ public class ExpansionBuffer {
     }
 
     public String toString() {
-        return resolved.append(unresolved).toString();
+        // Note: Mutation should not occur in toString else logging, debugging etc will cause erroneous behaviour
+        return resolved.toString() + unresolved;
     }
 
     public void add(String newKey, String newValue) {
