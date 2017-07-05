@@ -45,6 +45,20 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     private static final Pattern ALT_REPO_SYNTAX_PATTERN = Pattern.compile("(.+)::(.+)::(.+)::(.+)");
     private static final String CATALOG_HEADER = "[artifacts]";
 
+    /**
+     * Returns the policy or a default policy if {@code policy} is null.
+     *
+     * @param policy the policy to check
+     * @return the {@link org.apache.maven.model.RepositoryPolicy}
+     */
+    private static org.apache.maven.model.RepositoryPolicy ensureRepositoryPolicy(
+            @Nullable org.apache.maven.model.RepositoryPolicy policy) {
+        if (policy == null) {
+            return new org.apache.maven.model.RepositoryPolicy();
+        }
+        return policy;
+    }
+
     private static PrintWriter newPrintWriter(File catalog) throws FileNotFoundException {
         checkNotNull(catalog, "catalog must not be null");
         return new PrintWriter(new OutputStreamWriter(new FileOutputStream(catalog), UTF_8));
@@ -134,7 +148,12 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
 
             return repositoryFactory.createDeploymentArtifactRepository(id, url, repoLayout, unique);
         } else {
-            return repositoryFactory.createDeploymentArtifactRepository(candidate.getId(), candidate.getUrl(), getLayout(candidate.getLayout()), candidate.getSnapshots().isEnabled());
+            return repositoryFactory.createDeploymentArtifactRepository(
+                    candidate.getId(),
+                    candidate.getUrl(),
+                    getLayout(candidate.getLayout()),
+                    ensureRepositoryPolicy(candidate.getSnapshots()).isEnabled()
+            );
         }
     }
 
