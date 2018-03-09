@@ -1,6 +1,5 @@
 package com.e_gineering.maven.gitflowhelper;
 
-import com.e_gineering.maven.gitflowhelper.properties.ExpansionBuffer;
 import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -9,9 +8,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.scm.manager.ScmManager;
-import org.codehaus.plexus.util.cli.CommandLineUtils;
 
-import java.io.IOException;
 import java.util.Properties;
 
 /**
@@ -22,7 +19,6 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     private Properties systemEnvVars = new Properties();
 
     private PropertyResolver resolver = new PropertyResolver();
-
 
     @Component
     protected MavenProject project;
@@ -67,46 +63,25 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     }
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        if (gitBranchExpression == null) {
-            gitBranchExpression = ScmUtils.resolveBranchOrExpression(scmManager, project, getLog());
-        }
+        GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, project, getLog(), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern);
+        if (branchInfo != null) {
+            getLog().info(branchInfo.toString());
 
-        try {
-            systemEnvVars = CommandLineUtils.getSystemEnvVars();
-        } catch (IOException ioe) {
-            throw new MojoExecutionException("Unable to read System Envirionment Variables: ", ioe);
-        }
-
-        // Try to resolve the gitBranchExpression to an actual Value...
-        String gitBranch = resolveExpression(gitBranchExpression);
-        ExpansionBuffer eb = new ExpansionBuffer(gitBranch);
-
-        if (!gitBranchExpression.equals(gitBranch) || getLog().isDebugEnabled()) { // Resolves Issue #9
-            getLog().debug("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + gitBranch + "'");
-        }
-
-        if (!eb.hasMoreLegalPlaceholders()) {
-            /*
-             * (/origin/)?master goes to the maven 'release' repo.
-             * (/origin/)?release/(.*) , (/origin/)?hotfix/(.*) , and (/origin/)?bugfix/(.*) go to the maven 'stage' repo.
-             * (/origin/)?develop goes to the 'snapshot' repo.
-             * All other builds will use the default semantics for 'deploy'.
-             */
-            if (gitBranch.matches(masterBranchPattern)) {
-                logExecute(GitBranchType.MASTER, gitBranch, masterBranchPattern);
-            } else if (gitBranch.matches(supportBranchPattern)) {
-                logExecute(GitBranchType.SUPPORT, gitBranch, supportBranchPattern);
-            } else if (gitBranch.matches(releaseBranchPattern)) {
-                logExecute(GitBranchType.RELEASE, gitBranch, releaseBranchPattern);
-            } else if (gitBranch.matches(hotfixBranchPattern)) {
-                logExecute(GitBranchType.HOTFIX, gitBranch, hotfixBranchPattern);
-            } else if (gitBranch.matches(developmentBranchPattern)) {
-                logExecute(GitBranchType.DEVELOPMENT, gitBranch, developmentBranchPattern);
+            if (branchInfo.getBranchType().equals(GitBranchType.MASTER)) {
+                logExecute(GitBranchType.MASTER, branchInfo.getBranchName(), masterBranchPattern);
+            } else if (branchInfo.getBranchType().equals(GitBranchType.SUPPORT)) {
+                logExecute(GitBranchType.SUPPORT, branchInfo.getBranchName(), supportBranchPattern);
+            } else if (branchInfo.getBranchType().equals(GitBranchType.RELEASE)) {
+                logExecute(GitBranchType.RELEASE, branchInfo.getBranchName(), releaseBranchPattern);
+            } else if (branchInfo.getBranchType().equals(GitBranchType.HOTFIX)) {
+                logExecute(GitBranchType.HOTFIX, branchInfo.getBranchName(), hotfixBranchPattern);
+            } else if (branchInfo.getBranchType().equals(GitBranchType.DEVELOPMENT)) {
+                logExecute(GitBranchType.DEVELOPMENT, branchInfo.getBranchName(), developmentBranchPattern);
             } else {
-                logExecute(GitBranchType.OTHER, gitBranch, null);
+                logExecute(GitBranchType.OTHER, branchInfo.getBranchName(), null);
             }
         } else {
-            logExecute(GitBranchType.UNDEFINED, gitBranch, null);
+            logExecute(GitBranchType.UNDEFINED, "UNKNOWN_BRANCH", null);
         }
     }
 }
