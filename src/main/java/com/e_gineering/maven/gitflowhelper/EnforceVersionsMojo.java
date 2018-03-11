@@ -55,8 +55,8 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
                     }
                 }
             }
-        } else if (GitBranchType.DEVELOPMENT.equals(type) && !ArtifactUtils.isSnapshot(project.getVersion())) {
-            throw new MojoFailureException("The current git branch: [" + gitBranch + "] is detected as the gitflow development branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
+        } else if (GitBranchType.SNAPSHOT_TYPES.contains(type) && !ArtifactUtils.isSnapshot(project.getVersion())) {
+            throw new MojoFailureException("The current git branch: [" + gitBranch + "] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
         }
     }
 
