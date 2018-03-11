@@ -43,6 +43,7 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
         String releaseBranchPattern = null;
         String hotfixBranchPattern = null;
         String developmentBranchPattern = null;
+        String featureOrBugfixBranchPattern = null;
 
         String gitBranchExpression = null;
         boolean pluginFound = false;
@@ -96,6 +97,10 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                         developmentBranchPattern = extractPluginConfigValue("developmentBranchPattern", plugin);
                     }
 
+                    if (featureOrBugfixBranchPattern == null) {
+                        featureOrBugfixBranchPattern = extractPluginConfigValue("featureOrBugfixBranchPattern", plugin);
+                    }
+
                     if (gitBranchExpression == null) {
                         gitBranchExpression = extractPluginConfigValue("gitBranchExpression", plugin);
                     }
@@ -140,12 +145,18 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
             logger.debug("Hotfix Branch Pattern: " + hotfixBranchPattern);
 
             if (developmentBranchPattern == null) {
-                logger.debug("Using default support development Pattern.");
+                logger.debug("Using default development Pattern.");
                 developmentBranchPattern = "(origin/)?develop";
             }
             logger.debug("Development Branch Pattern: " + developmentBranchPattern);
 
-            GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern);
+            if (featureOrBugfixBranchPattern == null) {
+                logger.debug("Using default feature or bugfix Pattern.");
+                featureOrBugfixBranchPattern = "(origin/)?(?:feature|bugfix)/(.*)";
+            }
+            logger.debug("Feature or Bugfix Branch Pattern: " + featureOrBugfixBranchPattern);
+
+            GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
             boolean pruneBuild = false;
             if (branchInfo != null) {
                 logger.info(branchInfo.toString());

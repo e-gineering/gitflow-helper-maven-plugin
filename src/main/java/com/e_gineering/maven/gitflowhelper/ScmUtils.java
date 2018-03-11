@@ -75,13 +75,14 @@ public abstract class ScmUtils {
      * @param releaseBranchPattern Regex pattern matching release branches
      * @param hotfixBranchPattern Regex pattern matching hotfix branches
      * @param developmentBranchPattern Regex pattern matching development branches
+     * @param featureOrBugfixBranchPattern Regex pattern matching feature or bugfix branches
      * @return The detected Git branch info, or null if no branch info could be resolved
      */
     // TODO: should gitBranchExpression take precedence?
     // TODO: clean-up this spaghetti mess
-    public static GitBranchInfo getGitBranchInfo(final ScmManager scmManager, final MavenProject project, final Log log,
-                                                   final String gitBranchExpression, final String masterBranchPattern, final String supportBranchPattern,
-                                                   final String releaseBranchPattern, final String hotfixBranchPattern, final String developmentBranchPattern) {
+    public static GitBranchInfo getGitBranchInfo(final ScmManager scmManager, final MavenProject project, final Log log, final String gitBranchExpression,
+                                                 final String masterBranchPattern, final String supportBranchPattern, final String releaseBranchPattern,
+                                                 final String hotfixBranchPattern, final String developmentBranchPattern, final String featureOrBugfixBranchPattern) {
         String connectionUrl = resolveUrlOrExpression(project);
         // If a connectionURL other than the default expression was resolved, try to resolve the branch.
         if (!StringUtils.equals(connectionUrl, DEFAULT_URL_EXPRESSION)) {
@@ -97,7 +98,7 @@ public abstract class ScmUtils {
                     // First, try the local branch
                     try {
                         String localBranch = GitBranchCommand.getCurrentBranch(scmLogger, gitScmProviderRepository, fileSet);
-                        GitBranchType branchType = resolveBranchType(localBranch, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern);
+                        GitBranchType branchType = resolveBranchType(localBranch, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
                         return new GitBranchInfo(localBranch, branchType);
                     } catch(ScmException se) {
                         log.debug("Can't detect a local branch; detached HEAD? Will try to resolve that instead...");
@@ -117,7 +118,7 @@ public abstract class ScmUtils {
                     GitBranchType resolvedBranchType = null;
                     String branchName = null;
                     for (String branch : branches) {
-                        GitBranchType branchType = resolveBranchType(branch, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern);
+                        GitBranchType branchType = resolveBranchType(branch, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
                         if (resolvedBranchType == null) {
                             resolvedBranchType = branchType;
                         } else if (resolvedBranchType != branchType) {
@@ -162,7 +163,7 @@ public abstract class ScmUtils {
         ExpansionBuffer eb = new ExpansionBuffer(resolvedExpression);
 
         if (!eb.hasMoreLegalPlaceholders()) {
-            GitBranchType branchType = resolveBranchType(resolvedExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern);
+            GitBranchType branchType = resolveBranchType(resolvedExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
             return new GitBranchInfo(resolvedExpression, branchType);
         } else {
             log.warn("Not all placeholders in gitBranchExpression can be resolved: '" + resolvedExpression + "'. Can't determine the Git branch type.");
@@ -171,7 +172,7 @@ public abstract class ScmUtils {
     }
 
     private static GitBranchType resolveBranchType(String branchName, String masterBranchPattern, String supportBranchPattern, String releaseBranchPattern,
-                                             String hotfixBranchPattern, String developmentBranchPattern) {
+                                                   String hotfixBranchPattern, String developmentBranchPattern, String featureOrBugfixBranchPattern) {
         if (branchName.matches(masterBranchPattern)) {
             return GitBranchType.MASTER;
         } else if (branchName.matches(supportBranchPattern)) {
@@ -182,6 +183,8 @@ public abstract class ScmUtils {
             return GitBranchType.HOTFIX;
         } else if (branchName.matches(developmentBranchPattern)) {
             return GitBranchType.DEVELOPMENT;
+        } else if (branchName.matches(featureOrBugfixBranchPattern)) {
+            return GitBranchType.FEATURE_OR_BUGFIX_BRANCH;
         } else {
             return GitBranchType.OTHER;
         }

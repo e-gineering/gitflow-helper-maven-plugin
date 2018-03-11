@@ -21,7 +21,7 @@ public class GitBranchInfo {
 
     @Override
     public String toString() {
-        return "Git branch info[" +
+        return "Git branch info: [" +
                 "branchName='" + branchName + '\'' +
                 ", branchType=" + branchType +
                 ']';

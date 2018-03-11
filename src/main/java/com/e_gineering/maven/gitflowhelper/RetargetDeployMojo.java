@@ -43,14 +43,28 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 project.setReleaseArtifactRepository(null);
                 break;
             }
+            case FEATURE_OR_BUGFIX_BRANCH: {
+                if (deploySnapshotTypeBranches) {
+                    getLog().info("Setting snapshot artifact repository to: [" + snapshotDeploymentRepository + "]");
+                    project.setSnapshotArtifactRepository(getDeploymentRepository(snapshotDeploymentRepository));
+                    project.setReleaseArtifactRepository(null);
+                } else {
+                    unsetRepos();
+                }
+                break;
+            }
             default: {
-                getLog().info("Un-Setting artifact repositories.");
-                project.setSnapshotArtifactRepository(null);
-                project.setReleaseArtifactRepository(null);
-                project.getProperties().put("maven.deploy.skip", "true");
-                getLog().info("Setting maven.deploy.skip = 'true'");
+                unsetRepos();
                 break;
             }
         }
+    }
+
+    private void unsetRepos() {
+        getLog().info("Un-Setting artifact repositories.");
+        project.setSnapshotArtifactRepository(null);
+        project.setReleaseArtifactRepository(null);
+        project.getProperties().put("maven.deploy.skip", "true");
+        getLog().info("Setting maven.deploy.skip = 'true'");
     }
 }

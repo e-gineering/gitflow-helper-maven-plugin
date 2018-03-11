@@ -41,9 +41,15 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     @Parameter(defaultValue = "(origin/)?develop", property = "developmentBranchPattern", required = true)
     private String developmentBranchPattern;
 
+    @Parameter(defaultValue = "(origin/)?(?:feature|bugfix)/(.*)", property = "featureOrBugfixBranchPattern", required = true)
+    private String featureOrBugfixBranchPattern;
+
     // @Parameter tag causes property resolution to fail for patterns containing ${env.}. Default provided in execute();
     @Parameter(property = "gitBranchExpression", required = false)
     private String gitBranchExpression;
+
+    @Parameter(defaultValue = "false", property = "deploySnapshotTypeBranches")
+    boolean deploySnapshotTypeBranches;
 
     protected abstract void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException;
 
@@ -63,7 +69,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     }
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, project, getLog(), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern);
+        GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, project, getLog(), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
         if (branchInfo != null) {
             getLog().info(branchInfo.toString());
 
@@ -77,6 +83,8 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
                 logExecute(GitBranchType.HOTFIX, branchInfo.getBranchName(), hotfixBranchPattern);
             } else if (branchInfo.getBranchType().equals(GitBranchType.DEVELOPMENT)) {
                 logExecute(GitBranchType.DEVELOPMENT, branchInfo.getBranchName(), developmentBranchPattern);
+            } else if (branchInfo.getBranchType().equals(GitBranchType.FEATURE_OR_BUGFIX_BRANCH)) {
+                logExecute(GitBranchType.FEATURE_OR_BUGFIX_BRANCH, branchInfo.getBranchName(), featureOrBugfixBranchPattern);
             } else {
                 logExecute(GitBranchType.OTHER, branchInfo.getBranchName(), null);
             }

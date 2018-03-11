@@ -26,7 +26,7 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
             getLog().debug("Versioned Branch Type: " + type + " with branchPattern: " + branchPattern + " Checking against current branch: " + gitBranch);
             Matcher gitMatcher = Pattern.compile(branchPattern).matcher(gitBranch);
 
-            // We're in a release branch, we expect a non-SNAPSHOT version in the POM.
+            // We're in a versioned branch, we expect a non-SNAPSHOT version in the POM.
             if (gitMatcher.matches()) {
                 if (ArtifactUtils.isSnapshot(project.getVersion())) {
                     throw new MojoFailureException("The current git branch: [" + gitBranch + "] is defined as a release branch. The maven project version: [" + project.getVersion() + "] is currently a snapshot version.");
@@ -57,6 +57,23 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
             }
         } else if (GitBranchType.SNAPSHOT_TYPES.contains(type) && !ArtifactUtils.isSnapshot(project.getVersion())) {
             throw new MojoFailureException("The current git branch: [" + gitBranch + "] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
+        } else if (GitBranchType.FEATURE_OR_BUGFIX_BRANCH.equals(type) && deploySnapshotTypeBranches) {
+            // For FEATURE and BUGFIX branches, check if the POM version includes the branch name
+            Matcher gitMatcher = Pattern.compile(branchPattern).matcher(gitBranch);
+            if (gitMatcher.matches()) {
+                String branchName = gitMatcher.group(gitMatcher.groupCount());
+                String v = project.getVersion();
+                String branchNameSnapshot = branchName + "-" + Artifact.SNAPSHOT_VERSION;
+                if (v.length() < branchNameSnapshot.length() || !v.regionMatches(
+                        true,
+                        v.length() - branchNameSnapshot.length(),
+                        branchNameSnapshot,
+                        0,
+                        branchNameSnapshot.length())
+                        ) {
+                    throw new MojoFailureException("The project's version should end with [" + branchNameSnapshot + "]");
+                }
+            }
         }
     }
 
