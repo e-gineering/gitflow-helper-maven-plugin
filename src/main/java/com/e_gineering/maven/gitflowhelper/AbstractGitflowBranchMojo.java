@@ -21,10 +21,10 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     private PropertyResolver resolver = new PropertyResolver();
 
     @Component
-    protected MavenProject project;
-
-    @Component
     protected ScmManager scmManager;
+
+    @Parameter(defaultValue = "${project}", readonly = true)
+    protected MavenProject project;
 
     @Parameter(defaultValue = "(origin/)?master", property = "masterBranchPattern", required = true)
     private String masterBranchPattern;
