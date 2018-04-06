@@ -51,6 +51,9 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     @Parameter(defaultValue = "false", property = "deploySnapshotTypeBranches")
     boolean deploySnapshotTypeBranches;
 
+    @Parameter(defaultValue = "equals", property = "releaseBranchMatchType", required = true)
+    String releaseBranchMatchType;
+
     protected abstract void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException;
 
     /**
@@ -69,6 +72,8 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     }
 
     public void execute() throws MojoExecutionException, MojoFailureException {
+        checkReleaseBranchMatchTypeParam();
+
         GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, project, getLog(), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
         if (branchInfo != null) {
             getLog().info(branchInfo.toString());
@@ -92,4 +97,11 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
             logExecute(GitBranchType.UNDEFINED, "UNKNOWN_BRANCH", null);
         }
     }
+
+    private void checkReleaseBranchMatchTypeParam() throws MojoFailureException {
+        if (!"equals".equals(releaseBranchMatchType) && !"startsWith".equals(releaseBranchMatchType)) {
+            throw new MojoFailureException("'releaseBranchMatchType' should be either 'equals' or 'startsWith'. Found '" + releaseBranchMatchType + "'.");
+        }
+    }
 }
+
