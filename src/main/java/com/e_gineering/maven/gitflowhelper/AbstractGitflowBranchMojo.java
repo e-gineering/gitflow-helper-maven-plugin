@@ -76,7 +76,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
 
         GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, project, getLog(), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
         if (branchInfo != null) {
-            getLog().info(branchInfo.toString());
+            getLog().debug(branchInfo.toString());
 
             if (branchInfo.getBranchType().equals(GitBranchType.MASTER)) {
                 logExecute(GitBranchType.MASTER, branchInfo.getBranchName(), masterBranchPattern);
