@@ -30,7 +30,7 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
     protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
         if (project.isExecutionRoot() && (type.equals(GitBranchType.MASTER) || type.equals(GitBranchType.SUPPORT))) {
             if (gitURLExpression == null) {
-                gitURLExpression = ScmUtils.resolveUrlOrExpression(project, getLog());
+                gitURLExpression = ScmUtils.resolveUrlOrExpression(project);
             }
             String gitURL = resolveExpression(gitURLExpression);
             if (!gitURL.startsWith("scm:git:")) {

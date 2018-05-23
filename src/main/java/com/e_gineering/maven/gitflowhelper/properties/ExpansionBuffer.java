@@ -49,7 +49,7 @@ public class ExpansionBuffer {
     }
 
     public String toString() {
-        return resolved.append(unresolved).toString();
+        return resolved.toString() + unresolved;
     }
 
     public void add(String newKey, String newValue) {

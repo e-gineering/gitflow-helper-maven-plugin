@@ -11,8 +11,10 @@ public enum GitBranchType {
     RELEASE,
     HOTFIX,
     DEVELOPMENT,
+    FEATURE_OR_BUGFIX_BRANCH,
     OTHER,
     UNDEFINED;
 
-    static final EnumSet<GitBranchType> VERSIONED_TYPES = EnumSet.of(GitBranchType.MASTER, GitBranchType.SUPPORT, GitBranchType.RELEASE, GitBranchType.HOTFIX);
+    static final EnumSet<GitBranchType> VERSIONED_TYPES = EnumSet.of(MASTER, SUPPORT, RELEASE, HOTFIX);
+    static final EnumSet<GitBranchType> SNAPSHOT_TYPES = EnumSet.of(DEVELOPMENT, FEATURE_OR_BUGFIX_BRANCH, OTHER);
 }
