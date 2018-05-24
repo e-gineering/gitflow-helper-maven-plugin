@@ -6,6 +6,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 
 import java.util.HashSet;
@@ -20,6 +21,9 @@ import java.util.regex.Pattern;
 @Mojo(requiresDependencyCollection = ResolutionScope.TEST, name = "enforce-versions", defaultPhase = LifecyclePhase.VALIDATE)
 public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
 
+    @Parameter(defaultValue = "false", property = "enforceNonSnapshots", required = true)
+    private boolean enforceNonSnapshots;
+
     @Override
     protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
         if (GitBranchType.VERSIONED_TYPES.contains(type)) {
@@ -28,7 +32,9 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
 
             // We're in a versioned branch, we expect a non-SNAPSHOT version in the POM.
             if (gitMatcher.matches()) {
-                checkForSnapshots(gitBranch);
+                if (enforceNonSnapshots) {
+                    checkForSnapshots(gitBranch);
+                }
 
                 // Non-master version branches require a pom version match of some kind to the branch subgroups.
                 if (gitMatcher.groupCount() > 0 && gitMatcher.group(gitMatcher.groupCount()) != null) {
