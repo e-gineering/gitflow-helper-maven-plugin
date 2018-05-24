@@ -106,6 +106,8 @@ public abstract class ScmUtils {
         ScmProvider provider = scmManager.getProviderByRepository(repository);
         ScmFileSet fileSet = new ScmFileSet(project.getBasedir());
 
+        GitBranchInfo resolvedInfo = null;
+
         if (GitScmProviderRepository.PROTOCOL_GIT.equals(provider.getScmType())) {
             ScmLogDispatcher scmLogger = new ScmLogDispatcher();
             GitScmProviderRepository gitScmProviderRepository = (GitScmProviderRepository) repository.getProviderRepository();
@@ -114,50 +116,51 @@ public abstract class ScmUtils {
             try {
                 String localBranch = GitBranchCommand.getCurrentBranch(scmLogger, gitScmProviderRepository, fileSet);
                 GitBranchType branchType = resolveBranchType(localBranch, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
-                return new GitBranchInfo(localBranch, branchType);
+                resolvedInfo = new GitBranchInfo(localBranch, branchType);
             } catch(ScmException se) {
                 log.debug("Can't detect a local branch; detached HEAD? Will try to resolve that instead...");
-            }
+                // Next, try to resolve the detached HEAD to a single branch type
 
-            // Next, try to resolve the detached HEAD to a single branch type
+                // Do a rev-parse to get the commit hash that HEAD points to
+                String sha1 = sha1ForHEAD(scmLogger, fileSet);
+                log.debug("HEAD is pointing at " + sha1);
 
-            // Do a rev-parse to get the commit hash that HEAD points to
-            String sha1 = sha1ForHEAD(scmLogger, fileSet);
-            log.debug("HEAD is pointing at " + sha1);
+                // Now use show-ref to determine the branches that HEAD's sha1 points to.
+                Set<String> branches = branchesForSha1(sha1, scmLogger, fileSet);
+                log.debug("Found the following branches for " + sha1 + ": " + branches);
 
-            // Now use show-ref to determine the branches that HEAD's sha1 points to.
-            Set<String> branches = branchesForSha1(sha1, scmLogger, fileSet);
-            log.debug("Found the following branches for " + sha1 + ": " + branches);
-
-            // Check if the set of branches can be resolved to a single type
-            GitBranchType resolvedBranchType = null;
-            String branchName = null;
-            for (String branch : branches) {
-                GitBranchType branchType = resolveBranchType(branch, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
-                if (resolvedBranchType == null) {
-                    resolvedBranchType = branchType;
-                } else if (resolvedBranchType != branchType) {
-                    log.warn("Can't resolve " + sha1 + " to a single branch type");
-                    return null;
-                } else if (resolvedBranchType == GitBranchType.RELEASE || resolvedBranchType == GitBranchType.HOTFIX || resolvedBranchType == GitBranchType.SUPPORT) {
-                    // There may be only one RELEASE, HOTFIX or SUPPORT branch, as they contain version numbers
-                    log.warn("Found multiple versioned branches for " + sha1);
-                    return null;
+                // Check if the set of branches can be resolved to a single type
+                GitBranchType resolvedBranchType = null;
+                String branchName = null;
+                // Look through all the branches matching the sha. If we find a duplicate, bail out and fail.
+                for (String branch : branches) {
+                    GitBranchType branchType = resolveBranchType(branch, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
+                    if (resolvedBranchType == null) {
+                        resolvedBranchType = branchType;
+                    } else if (resolvedBranchType != branchType) {
+                        log.warn("Can't resolve " + sha1 + " to a single branch type");
+                        resolvedBranchType = null;
+                        break;
+                    } else if (resolvedBranchType == GitBranchType.RELEASE || resolvedBranchType == GitBranchType.HOTFIX || resolvedBranchType == GitBranchType.SUPPORT) {
+                        // There may be only one RELEASE, HOTFIX or SUPPORT branch, as they contain version numbers
+                        log.warn("Found multiple versioned branches for " + sha1);
+                        resolvedBranchType = null;
+                        break;
+                    }
+                    // Now we've got multiple non-versioned branches. That's no problem.
+                    branchName = branch;
                 }
-                // Now we've got multiple non-versioned branches. That's no problem.
-                branchName = branch;
-            }
 
-            if (resolvedBranchType != null) {
-                return new GitBranchInfo(branchName, resolvedBranchType);
-            } else {
-                log.warn("Can't resolve " + sha1 + " to any branch");
-                return null;
+                if (resolvedBranchType != null) {
+                    resolvedInfo = new GitBranchInfo(branchName, resolvedBranchType);
+                } else {
+                    log.warn("Can't resolve " + sha1 + " to any single branch");
+                }
             }
         } else {
             log.warn("Project SCM defines a non-git SCM provider. Falling back to variable resolution.");
-            return null;
         }
+        return resolvedInfo;
     }
 
     private static GitBranchInfo resolveBranchExpression(MavenProject project, Log log, String gitBranchExpression, String masterBranchPattern, String supportBranchPattern, String releaseBranchPattern, String hotfixBranchPattern, String developmentBranchPattern, String featureOrBugfixBranchPattern) {
