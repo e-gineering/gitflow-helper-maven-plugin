@@ -27,8 +27,8 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
     private String tag;
 
     @Override
-    protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
-        if (project.isExecutionRoot() && (type.equals(GitBranchType.MASTER) || type.equals(GitBranchType.SUPPORT))) {
+    protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {
+        if (project.isExecutionRoot() && (gitBranchInfo.getType().equals(GitBranchType.MASTER) || gitBranchInfo.getType().equals(GitBranchType.SUPPORT))) {
             if (gitURLExpression == null) {
                 gitURLExpression = ScmUtils.resolveUrlOrExpression(project);
             }
@@ -40,7 +40,7 @@ public class TagMasterMojo extends AbstractGitflowBranchMojo {
             ExpansionBuffer eb = new ExpansionBuffer(gitURL);
             if (!eb.hasMoreLegalPlaceholders()) {
 
-                getLog().info("Tagging SCM for CI build matching branchPattern: [" + branchPattern + "]");
+                getLog().info("Tagging SCM for CI build matching branchPattern: [" + gitBranchInfo.getPattern() + "]");
 
                 try {
                     ScmRepository repository = scmManager.makeScmRepository(gitURL);

@@ -1,5 +1,6 @@
 package com.e_gineering.maven.gitflowhelper;
 
+import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
@@ -11,11 +12,14 @@ import org.apache.maven.scm.manager.ScmManager;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.logging.Logger;
+import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Maven extension which removes (skips) undesired plugins from the build reactor when running on a master branch.
@@ -36,6 +40,13 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
 
     @Override
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
+        Properties systemEnvVars = null;
+        try {
+            systemEnvVars = CommandLineUtils.getSystemEnvVars();
+        } catch (IOException ioe) {
+            throw new MavenExecutionException("Unable to read System Envirionment Variables: ", ioe);
+        }
+
         // Look for a gitflow-helper-maven-plugin, so we can determine what the gitBranchExpression and branch patterns are...
         String masterBranchPattern = null;
         String supportBranchPattern = null;
@@ -156,15 +167,29 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
             }
             logger.debug("Feature or Bugfix Branch Pattern: " + featureOrBugfixBranchPattern);
 
-            GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
+
+            ScmUtils scmUtils = new ScmUtils(scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
+            if (gitBranchExpression == null) {
+                logger.debug("Using default branch expression resolver.");
+                gitBranchExpression = scmUtils.resolveBranchNameOrExpression(gitBranchExpression);
+            }
+            logger.debug("Git Branch Expression: " + gitBranchExpression);
+
+            PropertyResolver pr = new PropertyResolver();
+            String gitBranch = pr.resolveValue(gitBranchExpression, session.getCurrentProject().getProperties(), systemEnvVars);
+            logger.info("gitflow-helper-maven-plugin: Build Extension resolved gitBranchExpression: " + gitBranchExpression + " to: " + gitBranch);
+
+            GitBranchInfo branchInfo = scmUtils.getBranchInfo(gitBranch);
+
+            //GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
             boolean pruneBuild = false;
             if (branchInfo != null) {
                 logger.info(branchInfo.toString());
-                if (branchInfo.getBranchType().equals(GitBranchType.MASTER)) {
-                    logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + branchInfo.getBranchName() + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
+                if (branchInfo.getType().equals(GitBranchType.MASTER)) {
+                    logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + branchInfo.getName() + "] matches masterBranchPattern: [" + masterBranchPattern + "]");
                     pruneBuild = true;
-                } else if (branchInfo.getBranchType().equals(GitBranchType.SUPPORT)) {
-                    logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + branchInfo.getBranchName() + "] matches supportBranchPattern: [" + supportBranchPattern + "]");
+                } else if (branchInfo.getType().equals(GitBranchType.SUPPORT)) {
+                    logger.info("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [" + branchInfo.getName() + "] matches supportBranchPattern: [" + supportBranchPattern + "]");
                     pruneBuild = true;
                 }
             } else {

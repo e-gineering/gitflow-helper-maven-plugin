@@ -134,10 +134,10 @@ public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
 
 
     @Override
-    protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
+    protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {
         Properties toInject = null;
         File toLoad = null;
-        switch (type) {
+        switch (gitBranchInfo.getType()) {
             case SUPPORT: {
                 toInject = supportBranchProperties;
                 toLoad = supportBranchPropertyFile;

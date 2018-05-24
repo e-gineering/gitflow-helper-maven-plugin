@@ -21,32 +21,34 @@ import java.util.regex.Pattern;
 @Mojo(requiresDependencyCollection = ResolutionScope.TEST, name = "enforce-versions", defaultPhase = LifecyclePhase.VALIDATE)
 public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
 
-    @Parameter(defaultValue = "false", property = "enforceNonSnapshots", required = true)
+    @Parameter(defaultValue = "true", property = "enforceNonSnapshots", required = true)
     private boolean enforceNonSnapshots;
 
     @Override
-    protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
-        if (GitBranchType.VERSIONED_TYPES.contains(type)) {
-            getLog().debug("Versioned Branch Type: " + type + " with branchPattern: " + branchPattern + " Checking against current branch: " + gitBranch);
-            Matcher gitMatcher = Pattern.compile(branchPattern).matcher(gitBranch);
+    protected void execute(final GitBranchInfo branchInfo) throws MojoExecutionException, MojoFailureException {
+        if (GitBranchType.VERSIONED_TYPES.contains(branchInfo.getType())) {
+            getLog().debug("Versioned Branch: " + branchInfo);
+            Matcher gitMatcher = Pattern.compile(branchInfo.getPattern()).matcher(branchInfo.getName());
 
             // We're in a versioned branch, we expect a non-SNAPSHOT version in the POM.
             if (gitMatcher.matches()) {
                 if (enforceNonSnapshots) {
-                    checkForSnapshots(gitBranch);
+                    checkForSnapshots(branchInfo.getName());
                 }
 
                 // Non-master version branches require a pom version match of some kind to the branch subgroups.
                 if (gitMatcher.groupCount() > 0 && gitMatcher.group(gitMatcher.groupCount()) != null) {
-                    checkReleaseTypeBranchVersion(type, gitBranch, gitMatcher);
+                    checkReleaseTypeBranchVersion(branchInfo.getType(), branchInfo.getName(), gitMatcher);
                 }
             }
-        } else if (GitBranchType.SNAPSHOT_TYPES.contains(type) && !ArtifactUtils.isSnapshot(project.getVersion())) {
-            throw new MojoFailureException("The current git branch: [" + gitBranch + "] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
-        } else if (GitBranchType.FEATURE_OR_BUGFIX_BRANCH.equals(type) && deploySnapshotTypeBranches) {
-            checkFeatureOrBugfixBranchVersion(gitBranch, branchPattern);
+        } else if (GitBranchType.SNAPSHOT_TYPES.contains(branchInfo.getType()) && !ArtifactUtils.isSnapshot(project.getVersion())) {
+            throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
+        } else if (GitBranchType.FEATURE_OR_BUGFIX_BRANCH.equals(branchInfo.getType()) && deploySnapshotTypeBranches) {
+            checkFeatureOrBugfixBranchVersion(branchInfo.getName(), branchInfo.getPattern());
         }
     }
+
+// TODO: Refactor these to take a GitBranchInfo as a parameter.
 
     private void checkFeatureOrBugfixBranchVersion(String gitBranch, String branchPattern) throws MojoFailureException {
         // For FEATURE and BUGFIX branches, check if the POM version includes the branch name

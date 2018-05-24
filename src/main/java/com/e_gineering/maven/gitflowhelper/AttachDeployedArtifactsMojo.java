@@ -14,8 +14,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 @Execute(phase = LifecyclePhase.CLEAN)
 public class AttachDeployedArtifactsMojo extends AbstractGitflowBasedRepositoryMojo {
     @Override
-    protected void execute(GitBranchType type, String gitBranch, String branchPattern) throws MojoExecutionException, MojoFailureException {
-        switch (type) {
+    protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {
+        switch (gitBranchInfo.getType()) {
             case MASTER:
             case SUPPORT:
             {

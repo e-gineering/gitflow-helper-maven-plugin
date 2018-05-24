@@ -18,8 +18,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 public class PromoteMasterMojo extends AbstractGitflowBasedRepositoryMojo {
 
     @Override
-    protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
-        switch (type) {
+    protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {
+        switch (gitBranchInfo.getType()) {
             case FEATURE_OR_BUGFIX_BRANCH:
             case DEVELOPMENT:
             case HOTFIX:

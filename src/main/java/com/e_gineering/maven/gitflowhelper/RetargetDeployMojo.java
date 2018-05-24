@@ -12,12 +12,12 @@ import org.apache.maven.plugins.annotations.Mojo;
 @Mojo(name = "retarget-deploy", defaultPhase = LifecyclePhase.VALIDATE)
 public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
     @Override
-    protected void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
+    protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {
         if (project.getDistributionManagement() == null) {
             project.setDistributionManagement(new DistributionManagement());
         }
 
-        switch (type) {
+        switch (gitBranchInfo.getType()) {
             case SUPPORT:
             case MASTER: {
                 getLog().info("Setting release artifact repository to: [" + releaseDeploymentRepository + "]");

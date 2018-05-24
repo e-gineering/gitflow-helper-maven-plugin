@@ -1,7 +1,5 @@
 package com.e_gineering.maven.gitflowhelper;
 
-import com.e_gineering.maven.gitflowhelper.properties.ExpansionBuffer;
-import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.commons.lang.StringUtils;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
@@ -10,7 +8,6 @@ import org.apache.maven.scm.ScmFileSet;
 import org.apache.maven.scm.log.ScmLogDispatcher;
 import org.apache.maven.scm.log.ScmLogger;
 import org.apache.maven.scm.manager.ScmManager;
-import org.apache.maven.scm.provider.ScmProvider;
 import org.apache.maven.scm.provider.git.gitexe.command.GitCommandLineUtils;
 import org.apache.maven.scm.provider.git.gitexe.command.branch.GitBranchCommand;
 import org.apache.maven.scm.provider.git.repository.GitScmProviderRepository;
@@ -20,16 +17,40 @@ import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
 import org.codehaus.plexus.util.cli.StreamConsumer;
 
-import java.io.IOException;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class ScmUtils {
+class ScmUtils {
 
     private static final String DEFAULT_URL_EXPRESSION = "${env.GIT_URL}";
+    private static final String DEFAULT_BRANCH_EXPRESSION = "${env.GIT_BRANCH}";
+
+    private ScmManager scmManager;
+    private MavenProject project;
+    private Log log;
+    private String masterBranchPattern;
+    private String supportBranchPattern;
+    private String releaseBranchPattern;
+    private String hotfixBranchPattern;
+    private String developmentBranchPattern;
+    private String featureOrBugfixBranchPattern;
+
+    public ScmUtils(final ScmManager scmManager, final MavenProject project, final Log log,
+                    final String masterBranchPattern, final String supportBranchPattern, final String releaseBranchPattern,
+                    final String hotfixBranchPattern, final String developmentBranchPattern, final String featureOrBugfixBranchPattern)
+    {
+        this.scmManager = scmManager;
+        this.project = project;
+        this.log = log;
+        this.masterBranchPattern = masterBranchPattern;
+        this.supportBranchPattern = supportBranchPattern;
+        this.releaseBranchPattern = releaseBranchPattern;
+        this.hotfixBranchPattern = hotfixBranchPattern;
+        this.developmentBranchPattern = developmentBranchPattern;
+        this.featureOrBugfixBranchPattern = featureOrBugfixBranchPattern;
+    }
 
     /**
      * Given the ScmManager for the current execution cycle, and the MavenProject structure, determine the SCM URL or
@@ -59,67 +80,38 @@ public abstract class ScmUtils {
     }
 
     /**
-     * Get information on (most importantly, the type of) the current Git branch.
-     * If SCM information is configured in the POM (<code>&lt;scm&gt;</code>):
-     * <ul>
-     *     <li>If we're on a local branch, resolve the branch name.</li>
-     *     <li>If we're on a detached HEAD, try to find the type of branch(es) that point to HEAD.</li>
-     * </ul>
-     * If no SCM information is configured or if the 'gitBranchExpression' parameter is specified,
-     * try to resolve it to a value using the environment variables (${git.BRANCH_NAME}).
-     * @param scmManager The current maven ScmManager
-     * @param project The Current maven Project
-     * @param log A Log to write to
-     * @param masterBranchPattern Regex pattern matching master branches
-     * @param supportBranchPattern Regex pattern matching support branches
-     * @param releaseBranchPattern Regex pattern matching release branches
-     * @param hotfixBranchPattern Regex pattern matching hotfix branches
-     * @param developmentBranchPattern Regex pattern matching development branches
-     * @param featureOrBugfixBranchPattern Regex pattern matching feature or bugfix branches
-     * @return The detected Git branch info, or null if no branch info could be resolved
+     * Attempts to resolve the current branch of the build.
      */
-    public static GitBranchInfo getGitBranchInfo(final ScmManager scmManager, final MavenProject project, final Log log, final String gitBranchExpression,
-                                                 final String masterBranchPattern, final String supportBranchPattern, final String releaseBranchPattern,
-                                                 final String hotfixBranchPattern, final String developmentBranchPattern, final String featureOrBugfixBranchPattern) {
+    public String resolveBranchNameOrExpression(final String gitBranchExpression)
+    {
+        // Start off with the name or expression provided from the config parameter.
+        // Remember, the config parameter may be `null` (it is by default).
+        String branchNameOrExpression = gitBranchExpression;
+
+
         String connectionUrl = resolveUrlOrExpression(project);
-        GitBranchInfo branchInfo = null;
-        // If a connectionURL other than the default expression was resolved, try to resolve the branch.
-        if (!StringUtils.equals(connectionUrl, DEFAULT_URL_EXPRESSION)) {
-            try {
-                branchInfo = resolveGitBranch(project, log, scmManager, connectionUrl, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
-            } catch (ScmException se) {
-                log.warn("Unable to resolve Git Branch from Project SCM definition.", se);
+
+        try {
+            ScmRepository repository = scmManager.makeScmRepository(connectionUrl);
+            if (!GitScmProviderRepository.PROTOCOL_GIT.equals(scmManager.getProviderByRepository(repository).getScmType())) {
+                throw new ScmException("Unable to resolve branches from non-git <scm> definitions.");
             }
-        } else {
-            log.debug("No <scm> info found, relying on gitBranchExpression: " + gitBranchExpression);
-        }
 
-        if (branchInfo != null) {
-            return  branchInfo;
-        } else {
-            return resolveBranchExpression(project, log, gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
-        }
-    }
-
-    private static GitBranchInfo resolveGitBranch(MavenProject project, Log log, final ScmManager scmManager, final String connectionUrl, String masterBranchPattern, String supportBranchPattern, String releaseBranchPattern, String hotfixBranchPattern, String developmentBranchPattern, String featureOrBugfixBranchPattern) throws ScmException {
-        ScmRepository repository = scmManager.makeScmRepository(connectionUrl);
-        ScmProvider provider = scmManager.getProviderByRepository(repository);
-        ScmFileSet fileSet = new ScmFileSet(project.getBasedir());
-
-        GitBranchInfo resolvedInfo = null;
-
-        if (GitScmProviderRepository.PROTOCOL_GIT.equals(provider.getScmType())) {
-            ScmLogDispatcher scmLogger = new ScmLogDispatcher();
+            // We know it's a GIT repo...
             GitScmProviderRepository gitScmProviderRepository = (GitScmProviderRepository) repository.getProviderRepository();
 
-            // First, try the local branch
+            ScmFileSet fileSet = new ScmFileSet(project.getBasedir());
+            ScmLogDispatcher scmLogger = new ScmLogDispatcher();
+
             try {
-                String localBranch = GitBranchCommand.getCurrentBranch(scmLogger, gitScmProviderRepository, fileSet);
-                GitBranchType branchType = resolveBranchType(localBranch, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
-                resolvedInfo = new GitBranchInfo(localBranch, branchType);
-            } catch(ScmException se) {
-                log.debug("Can't detect a local branch; detached HEAD? Will try to resolve that instead...");
-                // Next, try to resolve the detached HEAD to a single branch type
+                branchNameOrExpression = GitBranchCommand.getCurrentBranch(scmLogger, gitScmProviderRepository, fileSet);
+            } catch (ScmException scme) {
+                log.debug("Exception attempting to resolve a local branch. Attempting detached HEAD resolution");
+
+                // Try to resolve a detached HEAD to a single branch.
+                // If we have more than one branch resolving, make sure they're the same type.
+                // If there are more than one _type_ of branch resolved for the detached HEAD, then we'll need to
+                // fall back to the branchNameOrExpression (to resolve via environment properties).
 
                 // Do a rev-parse to get the commit hash that HEAD points to
                 String sha1 = sha1ForHEAD(scmLogger, fileSet);
@@ -129,78 +121,72 @@ public abstract class ScmUtils {
                 Set<String> branches = branchesForSha1(sha1, scmLogger, fileSet);
                 log.debug("Found the following branches for " + sha1 + ": " + branches);
 
-                // Check if the set of branches can be resolved to a single type
-                GitBranchType resolvedBranchType = null;
-                String branchName = null;
-                // Look through all the branches matching the sha. If we find a duplicate, bail out and fail.
-                for (String branch : branches) {
-                    GitBranchType branchType = resolveBranchType(branch, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
-                    if (resolvedBranchType == null) {
-                        resolvedBranchType = branchType;
-                    } else if (resolvedBranchType != branchType) {
-                        log.warn("Can't resolve " + sha1 + " to a single branch type");
-                        resolvedBranchType = null;
-                        break;
-                    } else if (resolvedBranchType == GitBranchType.RELEASE || resolvedBranchType == GitBranchType.HOTFIX || resolvedBranchType == GitBranchType.SUPPORT) {
-                        // There may be only one RELEASE, HOTFIX or SUPPORT branch, as they contain version numbers
-                        log.warn("Found multiple versioned branches for " + sha1);
-                        resolvedBranchType = null;
-                        break;
+                // State tracking as we loop
+                GitBranchType type = null;
+                String name = null;
+
+                for (String candidateName : branches) {
+                    GitBranchType candidateType = resolveBranchType(candidateName).getType();
+                    // First iteration of a resolved type.
+                    if (type == null){
+                        type = candidateType;
+                        name = candidateName; // Use the first name we get.
+                        continue;
                     }
-                    // Now we've got multiple non-versioned branches. That's no problem.
-                    branchName = branch;
+
+                    // A subsequent branch which resolved.
+                    if (candidateType != type) {
+                        throw new ScmException("Multiple branches with different types resolved for " + sha1);
+                    }
+
+                    // If a branch type is a versioned branch, there can be only one branch type matching that version.
+                    if (GitBranchType.UNIQUELY_VERSIONED_TYPES.contains(candidateType)) {
+                        throw new ScmException("Multiple branches of different type reference the same release version for " + sha1);
+                    }
                 }
 
-                if (resolvedBranchType != null) {
-                    resolvedInfo = new GitBranchInfo(branchName, resolvedBranchType);
-                } else {
-                    log.warn("Can't resolve " + sha1 + " to any single branch");
-                }
+                // Detached head resolution was successful.
+                // Either we iterated once, or all of the subsequent types were resolved to the same type as the
+                // first branch, and there was only one of those branches which may have been a uniquely versioned branch.
+                branchNameOrExpression = name;
             }
-        } else {
-            log.warn("Project SCM defines a non-git SCM provider. Falling back to variable resolution.");
+        } catch (ScmException scme) {
+            // Only do the following if the SCM resolution fails miserably.
+            log.warn("Unable to resolve a branch from SCM. Falling back to property replacement.", scme);
+        } catch (IllegalArgumentException iae) {
+            log.debug("IllegalArgumentException likely the result of the <scm> block missing from the pom.xml", iae);
         }
-        return resolvedInfo;
+
+        // Make sure we have a non-null value. (may have been passed in from the @Parameter)
+        if (branchNameOrExpression == null) {
+            branchNameOrExpression = DEFAULT_BRANCH_EXPRESSION;
+        }
+
+        return branchNameOrExpression;
     }
 
-    private static GitBranchInfo resolveBranchExpression(MavenProject project, Log log, String gitBranchExpression, String masterBranchPattern, String supportBranchPattern, String releaseBranchPattern, String hotfixBranchPattern, String developmentBranchPattern, String featureOrBugfixBranchPattern) {
-        Properties systemEnvVars;
-        try {
-            systemEnvVars = CommandLineUtils.getSystemEnvVars();
-        } catch (IOException ioe) {
-            log.warn("Unable to read System Environment Variables. Can't determine the Git branch type.", ioe);
-            return null;
-        }
-
-        PropertyResolver resolver = new PropertyResolver();
-        String resolvedExpression = resolver.resolveValue(gitBranchExpression, project.getProperties(), systemEnvVars);
-        ExpansionBuffer eb = new ExpansionBuffer(resolvedExpression);
-
-        if (!eb.hasMoreLegalPlaceholders()) {
-            GitBranchType branchType = resolveBranchType(resolvedExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
-            return new GitBranchInfo(resolvedExpression, branchType);
-        } else {
-            log.warn("Not all placeholders in gitBranchExpression can be resolved: '" + resolvedExpression + "'. Can't determine the Git branch type.");
-            return null;
-        }
+    public GitBranchInfo getBranchInfo(final String branchName) {
+        return resolveBranchType(branchName);
     }
 
-    private static GitBranchType resolveBranchType(String branchName, String masterBranchPattern, String supportBranchPattern, String releaseBranchPattern,
-                                                   String hotfixBranchPattern, String developmentBranchPattern, String featureOrBugfixBranchPattern) {
-        if (branchName.matches(masterBranchPattern)) {
-            return GitBranchType.MASTER;
+
+    private GitBranchInfo resolveBranchType(String branchName) {
+        if (branchName == null || branchName.equals("") || branchName.equals(DEFAULT_BRANCH_EXPRESSION)) {
+            return new GitBranchInfo(branchName, GitBranchType.UNDEFINED, null);
+        } else if (branchName.matches(masterBranchPattern)) {
+            return new GitBranchInfo(branchName, GitBranchType.MASTER, masterBranchPattern);
         } else if (branchName.matches(supportBranchPattern)) {
-            return GitBranchType.SUPPORT;
+            return new GitBranchInfo(branchName, GitBranchType.SUPPORT, supportBranchPattern);
         } else if (branchName.matches(releaseBranchPattern)) {
-            return GitBranchType.RELEASE;
+            return new GitBranchInfo(branchName, GitBranchType.RELEASE, releaseBranchPattern);
         } else if (branchName.matches(hotfixBranchPattern)) {
-            return GitBranchType.HOTFIX;
+            return new GitBranchInfo(branchName, GitBranchType.HOTFIX, hotfixBranchPattern);
         } else if (branchName.matches(developmentBranchPattern)) {
-            return GitBranchType.DEVELOPMENT;
+            return new GitBranchInfo(branchName, GitBranchType.DEVELOPMENT, developmentBranchPattern);
         } else if (branchName.matches(featureOrBugfixBranchPattern)) {
-            return GitBranchType.FEATURE_OR_BUGFIX_BRANCH;
+            return new GitBranchInfo(branchName, GitBranchType.FEATURE_OR_BUGFIX_BRANCH, featureOrBugfixBranchPattern);
         } else {
-            return GitBranchType.OTHER;
+            return new GitBranchInfo(branchName, GitBranchType.OTHER, null);
         }
     }
 
