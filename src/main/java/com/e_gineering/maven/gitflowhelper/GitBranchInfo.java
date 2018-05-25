@@ -55,8 +55,8 @@ public class GitBranchInfo {
     public String toString() {
         return "GitBranchInfo: [" +
                 "name='" + name + '\'' +
-                ", type=" + type + '\'' +
-                ", pattern=" + pattern +
+                ", type='" + type + '\'' +
+                ", pattern='" + pattern + '\'' +
                 ']';
     }
 }

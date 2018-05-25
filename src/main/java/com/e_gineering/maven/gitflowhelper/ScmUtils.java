@@ -1,6 +1,9 @@
 package com.e_gineering.maven.gitflowhelper;
 
+import com.e_gineering.maven.gitflowhelper.properties.ExpansionBuffer;
+import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.commons.lang.StringUtils;
+import org.apache.maven.MavenExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.scm.ScmException;
@@ -17,7 +20,9 @@ import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
 import org.codehaus.plexus.util.cli.StreamConsumer;
 
+import java.io.IOException;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +32,7 @@ class ScmUtils {
     private static final String DEFAULT_URL_EXPRESSION = "${env.GIT_URL}";
     private static final String DEFAULT_BRANCH_EXPRESSION = "${env.GIT_BRANCH}";
 
+    private Properties systemEnvVars;
     private ScmManager scmManager;
     private MavenProject project;
     private Log log;
@@ -37,10 +43,11 @@ class ScmUtils {
     private String developmentBranchPattern;
     private String featureOrBugfixBranchPattern;
 
-    public ScmUtils(final ScmManager scmManager, final MavenProject project, final Log log,
+    public ScmUtils(final Properties systemEnvVars, final ScmManager scmManager, final MavenProject project, final Log log,
                     final String masterBranchPattern, final String supportBranchPattern, final String releaseBranchPattern,
                     final String hotfixBranchPattern, final String developmentBranchPattern, final String featureOrBugfixBranchPattern)
     {
+        this.systemEnvVars = systemEnvVars;
         this.scmManager = scmManager;
         this.project = project;
         this.log = log;
@@ -82,7 +89,7 @@ class ScmUtils {
     /**
      * Attempts to resolve the current branch of the build.
      */
-    public String resolveBranchNameOrExpression(final String gitBranchExpression)
+    public GitBranchInfo resolveBranchInfo(final String gitBranchExpression)
     {
         // Start off with the name or expression provided from the config parameter.
         // Remember, the config parameter may be `null` (it is by default).
@@ -162,17 +169,26 @@ class ScmUtils {
             branchNameOrExpression = DEFAULT_BRANCH_EXPRESSION;
         }
 
-        return branchNameOrExpression;
-    }
+        // Now force it to resolve any properties.
+        String resolvedBranchName = PropertyResolver.resolveValue(branchNameOrExpression, project.getProperties(), systemEnvVars);
 
-    public GitBranchInfo getBranchInfo(final String branchName) {
-        return resolveBranchType(branchName);
-    }
+        if (!branchNameOrExpression.equals(resolvedBranchName) || log.isDebugEnabled()) { // Resolves Issue #9
+            if (log.isDebugEnabled()) {
+                log.debug("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + resolvedBranchName + "'");
+            }
+        }
+        // It's possible that we were unable to expand all the properties.
+        ExpansionBuffer eb = new ExpansionBuffer(resolvedBranchName);
+        if (eb.hasMoreLegalPlaceholders()) {
+            resolvedBranchName = null; // Force it to resolve as UNDEFINED.
+        }
 
+        return resolveBranchType(resolvedBranchName);
+    }
 
     private GitBranchInfo resolveBranchType(String branchName) {
         if (branchName == null || branchName.equals("") || branchName.equals(DEFAULT_BRANCH_EXPRESSION)) {
-            return new GitBranchInfo(branchName, GitBranchType.UNDEFINED, null);
+            return new GitBranchInfo("", GitBranchType.UNDEFINED, null); // Force UNDEFINED to be "" for the name.
         } else if (branchName.matches(masterBranchPattern)) {
             return new GitBranchInfo(branchName, GitBranchType.MASTER, masterBranchPattern);
         } else if (branchName.matches(supportBranchPattern)) {

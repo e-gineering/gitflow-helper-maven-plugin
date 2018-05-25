@@ -21,8 +21,6 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
 
     private Properties systemEnvVars = new Properties();
 
-    private PropertyResolver resolver = new PropertyResolver();
-
     @Component
     protected ScmManager scmManager;
 
@@ -60,13 +58,13 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     String releaseBranchMatchType;
 
     /**
-     * Method exposing Property Resolving for subclasses.
+     * Convenience Method exposing Property Resolving for subclasses.
      *
      * @param expression
      * @return
      */
     protected String resolveExpression(final String expression) {
-        return resolver.resolveValue(expression, project.getProperties(), systemEnvVars);
+        return PropertyResolver.resolveValue(expression, project.getProperties(), systemEnvVars);
     }
 
     /**
@@ -80,16 +78,6 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     protected abstract void execute(final GitBranchInfo currentBranch) throws MojoExecutionException, MojoFailureException;
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        // Validate the match type.
-        checkReleaseBranchMatchTypeParam();
-
-        ScmUtils scmUtils = new ScmUtils(scmManager, project, getLog(), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
-
-        if (gitBranchExpression == null) {
-            // Get either a branch name, or a property expression. We don't care which one.
-            gitBranchExpression = scmUtils.resolveBranchNameOrExpression(gitBranchExpression);
-        }
-
         // Weather we resolve a single branch name or not, it won't hurt to run it through property replacement.
         try {
             systemEnvVars = CommandLineUtils.getSystemEnvVars();
@@ -97,16 +85,13 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
             throw new MojoExecutionException("Unable to read System Envirionment Variables: ", ioe);
         }
 
-        // Try to resolve the gitBranchExpression to an actual Value...
-        String gitBranch = resolveExpression(gitBranchExpression);
-        ExpansionBuffer eb = new ExpansionBuffer(gitBranch);
+        // Validate the match type.
+        checkReleaseBranchMatchTypeParam();
 
-        if (!gitBranchExpression.equals(gitBranch) || getLog().isDebugEnabled()) { // Resolves Issue #9
-            getLog().debug("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + gitBranch + "'");
-        }
+        ScmUtils scmUtils = new ScmUtils(systemEnvVars, scmManager, project, getLog(), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
+        GitBranchInfo branchInfo = scmUtils.resolveBranchInfo(gitBranchExpression);
 
-        GitBranchInfo branchInfo = scmUtils.getBranchInfo(gitBranch);
-        getLog().debug("Building for GitBranch: "  + gitBranch);
+        getLog().debug("Building for: " + branchInfo);
         execute(branchInfo);
     }
 

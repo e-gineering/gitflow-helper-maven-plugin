@@ -15,6 +15,7 @@ import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -167,19 +168,8 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
             }
             logger.debug("Feature or Bugfix Branch Pattern: " + featureOrBugfixBranchPattern);
 
-
-            ScmUtils scmUtils = new ScmUtils(scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
-            if (gitBranchExpression == null) {
-                logger.debug("Using default branch expression resolver.");
-                gitBranchExpression = scmUtils.resolveBranchNameOrExpression(gitBranchExpression);
-            }
-            logger.debug("Git Branch Expression: " + gitBranchExpression);
-
-            PropertyResolver pr = new PropertyResolver();
-            String gitBranch = pr.resolveValue(gitBranchExpression, session.getCurrentProject().getProperties(), systemEnvVars);
-            logger.info("gitflow-helper-maven-plugin: Build Extension resolved gitBranchExpression: " + gitBranchExpression + " to: " + gitBranch);
-
-            GitBranchInfo branchInfo = scmUtils.getBranchInfo(gitBranch);
+            ScmUtils scmUtils = new ScmUtils(systemEnvVars, scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
+            GitBranchInfo branchInfo = scmUtils.resolveBranchInfo(gitBranchExpression);
 
             //GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
             boolean pruneBuild = false;
