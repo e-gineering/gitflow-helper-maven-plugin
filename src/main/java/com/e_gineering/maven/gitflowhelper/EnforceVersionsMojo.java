@@ -33,26 +33,24 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
             // We're in a versioned branch, we expect a non-SNAPSHOT version in the POM.
             if (gitMatcher.matches()) {
                 if (enforceNonSnapshots) {
-                    checkForSnapshots(branchInfo.getName());
+                    checkForSnapshots(branchInfo);
                 }
 
                 // Non-master version branches require a pom version match of some kind to the branch subgroups.
                 if (gitMatcher.groupCount() > 0 && gitMatcher.group(gitMatcher.groupCount()) != null) {
-                    checkReleaseTypeBranchVersion(branchInfo.getType(), branchInfo.getName(), gitMatcher);
+                    checkReleaseTypeBranchVersion(branchInfo, gitMatcher);
                 }
             }
         } else if (GitBranchType.SNAPSHOT_TYPES.contains(branchInfo.getType()) && !ArtifactUtils.isSnapshot(project.getVersion())) {
             throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
         } else if (GitBranchType.FEATURE_OR_BUGFIX_BRANCH.equals(branchInfo.getType()) && deploySnapshotTypeBranches) {
-            checkFeatureOrBugfixBranchVersion(branchInfo.getName(), branchInfo.getPattern());
+            checkFeatureOrBugfixBranchVersion(branchInfo);
         }
     }
 
-// TODO: Refactor these to take a GitBranchInfo as a parameter.
-
-    private void checkFeatureOrBugfixBranchVersion(String gitBranch, String branchPattern) throws MojoFailureException {
+    private void checkFeatureOrBugfixBranchVersion(final GitBranchInfo branchInfo) throws MojoFailureException {
         // For FEATURE and BUGFIX branches, check if the POM version includes the branch name
-        Matcher gitMatcher = Pattern.compile(branchPattern).matcher(gitBranch);
+        Matcher gitMatcher = Pattern.compile(branchInfo.getPattern()).matcher(branchInfo.getName());
         if (gitMatcher.matches()) {
             String branchName = gitMatcher.group(gitMatcher.groupCount());
             String v = project.getVersion();
@@ -69,45 +67,45 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
         }
     }
 
-    private void checkReleaseTypeBranchVersion(GitBranchType type, String gitBranch, Matcher gitMatcher) throws MojoFailureException {
+    private void checkReleaseTypeBranchVersion(final GitBranchInfo branchInfo, final Matcher gitMatcher) throws MojoFailureException {
         // RELEASE, HOTFIX and SUPPORT branches require a match of the maven project version to the subgroup.
         // Depending on the value of the 'releaseBranchMatchType' param, it's either 'equals' or 'startsWith'.
         if ("equals".equals(releaseBranchMatchType)) {
             // HOTFIX and RELEASE branches require an exact match to the last subgroup.
-            if ((GitBranchType.RELEASE.equals(type) || GitBranchType.HOTFIX.equals(type)) && !gitMatcher.group(gitMatcher.groupCount()).trim().equals(project.getVersion().trim())) {
-                throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to be: [" + gitMatcher.group(gitMatcher.groupCount()).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
+            if ((GitBranchType.RELEASE.equals(branchInfo.getType()) || GitBranchType.HOTFIX.equals(branchInfo.getType())) && !gitMatcher.group(gitMatcher.groupCount()).trim().equals(project.getVersion().trim())) {
+                throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] expected the maven project version to be: [" + gitMatcher.group(gitMatcher.groupCount()).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
             }
 
             // SUPPORT branches require a 'starts with' match of the maven project version to the subgroup.
             // ex: /origin/support/3.1 must have a maven version that starts with "3.1", ala: "3.1.2"
-            if (GitBranchType.SUPPORT.equals(type) && !project.getVersion().startsWith(gitMatcher.group(gitMatcher.groupCount()).trim())) {
-                throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to start with: [" + gitMatcher.group(gitMatcher.groupCount()).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
+            if (GitBranchType.SUPPORT.equals(branchInfo.getType()) && !project.getVersion().startsWith(gitMatcher.group(gitMatcher.groupCount()).trim())) {
+                throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] expected the maven project version to start with: [" + gitMatcher.group(gitMatcher.groupCount()).trim() + "], but the maven project version is: [" + project.getVersion() + "]");
             }
         } else { // "startsWith"
             // ex: /origin/release/3.1 must have a maven version that starts with "3.1", ala: "3.1.2"
-            if (gitMatcher.groupCount() > 0 && !GitBranchType.MASTER.equals(type)) {
+            if (gitMatcher.groupCount() > 0 && !GitBranchType.MASTER.equals(branchInfo.getType())) {
                 String releaseBranchVersion = gitMatcher.group(gitMatcher.groupCount()).trim();
                 // Type check always returns true, as it's in VERSIONED_TYPES and not MASTER, but it's handy documentation
-                if ((GitBranchType.RELEASE.equals(type) || GitBranchType.HOTFIX.equals(type) || GitBranchType.SUPPORT.equals(type)) && !project.getVersion().startsWith(releaseBranchVersion)) {
-                    throw new MojoFailureException("The current git branch: [" + gitBranch + "] expected the maven project version to start with: [" + releaseBranchVersion + "], but the maven project version is: [" + project.getVersion() + "]");
+                if ((GitBranchType.RELEASE.equals(branchInfo.getType()) || GitBranchType.HOTFIX.equals(branchInfo.getType()) || GitBranchType.SUPPORT.equals(branchInfo.getType())) && !project.getVersion().startsWith(releaseBranchVersion)) {
+                    throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] expected the maven project version to start with: [" + releaseBranchVersion + "], but the maven project version is: [" + project.getVersion() + "]");
                 }
             }
         }
     }
 
-    private void checkForSnapshots(String gitBranch) throws MojoFailureException {
+    private void checkForSnapshots(final GitBranchInfo gitBranchInfo) throws MojoFailureException {
         if (ArtifactUtils.isSnapshot(project.getVersion())) {
-            throw new MojoFailureException("The current git branch: [" + gitBranch + "] is defined as a release branch. The maven project version: [" + project.getVersion() + "] is currently a snapshot version.");
+            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project version: [" + project.getVersion() + "] is currently a snapshot version.");
         }
 
         Set<String> snapshotDeps = getSnapshotDeps();
         if (!snapshotDeps.isEmpty()) {
-            throw new MojoFailureException("The current git branch: [" + gitBranch + "] is defined as a release branch. The maven project has the following SNAPSHOT dependencies: " + snapshotDeps.toString());
+            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT dependencies: " + snapshotDeps.toString());
         }
 
         Set<String> snapshotPluginDeps = getSnapshotPluginDeps();
         if (!snapshotPluginDeps.isEmpty()) {
-            throw new MojoFailureException("The current git branch: [" + gitBranch + "] is defined as a release branch. The maven project has the following SNAPSHOT plugin dependencies: " + snapshotPluginDeps.toString());
+            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT plugin dependencies: " + snapshotPluginDeps.toString());
         }
     }
 
