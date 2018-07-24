@@ -8,6 +8,7 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -94,8 +95,8 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
     }
 
     private void checkForSnapshots(final GitBranchInfo gitBranchInfo) throws MojoFailureException {
-        if (ArtifactUtils.isSnapshot(project.getVersion())) {
-            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project version: [" + project.getVersion() + "] is currently a snapshot version.");
+        if (hasSnapshotInModel(project)) {
+            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project or one of its parents is currently a snapshot version.");
         }
 
         Set<String> snapshotDeps = getSnapshotDeps();
@@ -107,6 +108,15 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
         if (!snapshotPluginDeps.isEmpty()) {
             throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT plugin dependencies: " + snapshotPluginDeps.toString());
         }
+    }
+
+    private boolean hasSnapshotInModel(final MavenProject project) {
+        MavenProject parent = project.getParent();
+
+        boolean projectIsSnapshot = ArtifactUtils.isSnapshot(project.getVersion());
+        boolean parentIsSnapshot = parent != null && hasSnapshotInModel(parent);
+
+        return projectIsSnapshot || parentIsSnapshot;
     }
 
     private Set<String> getSnapshotDeps() {
