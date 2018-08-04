@@ -130,7 +130,8 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
 
             if (candidate == null) {
                 throw new MojoFailureException(altRepository, "Invalid syntax for repository or repository id not resolved..",
-                        "Invalid syntax for repository. Use \"id::layout::url::unique\" or only specify the \"id\".");
+                        "Invalid syntax for repository. Use \"id::layout::url::unique\" or only specify the \"id\"." +
+                        " For the \"id\", make sure that the corresponding <repository> element has been defined (e.g. in the ~/.m2/settings.xml file)");
             }
         }
 

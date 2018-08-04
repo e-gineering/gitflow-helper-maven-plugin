@@ -49,7 +49,6 @@ public class ExpansionBuffer {
     }
 
     public String toString() {
-        // Note: Mutation should not occur in toString else logging, debugging etc will cause erroneous behaviour
         return resolved.toString() + unresolved;
     }
 
