@@ -144,7 +144,7 @@ One common stumbling block for teams adjusting to gitflow with Maven projects is
 In practice, the Maven versions should:
  
  * Be synchronized with release branch and hotfix branch names.
- * Never be -SNAPSHOT in the master, support, release, or hotfix branches. Also, no -SNAPSHOT (plugin) dependencies are allowed.
+ * Never be -SNAPSHOT in the master, support, release, or hotfix branches. Also, no -SNAPSHOT parent or (plugin) dependencies are allowed. (This condition may be disabled by setting `enforceNonSnapshots` = `false`.)
  * Always be -SNAPSHOT in the feature and develop branches.
  * Be irrelevant if there's no git branch resolvable from your environment.
 
@@ -160,6 +160,7 @@ The following properties change the behavior of this goal:
 | -------------------- | ------------- | --------------------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | n/a | Maven property expression to resolve in order to determine the current git branch |
 | deploySnapshotTypeBranches  | `false` | n/a | When `true`, the POM version should end with the feature branch name and -SNAPSHOT, e.g. `1.0.0-myfeature-SNAPSHOT`. This prevents a feature branch snapshot from "overwriting" a snapshot from the develop branch. |
+| enforceNonSnapshots | `true` | n/a | When `true`, enforce the requirement that none of the following may contain a -SNAPSHOT: the POM version, any parent, or any (plugin) dependencies. |
 | releaseBranchMatchType  | `equals` | n/a | When `equals`, the POM version should be identical to the branch name for release and hotfix branches (e.g. POM version should be `1.0.0` for branch `release/1.0.0`). When `startsWith`, POM version should start with the name branch (e.g. POM version could be `1.0.1` for branch `release/1.0`. When using the `update-stage-dependencies` mojo, set to `equals`, otherwise set to `startsWith`. |
 | masterBranchPattern  | (origin/)?master | No | Regex. When matched, signals the master branch is being built. |
 | supportBranchPattern | (origin/)?support/(.*) | No | Regex. When matches, signals a support branch (long term master-equivalent for older release) being built. Last subgroup, if present, must be start of the Maven project version. |
