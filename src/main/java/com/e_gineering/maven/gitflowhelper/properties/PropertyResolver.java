@@ -40,7 +40,7 @@ public class PropertyResolver {
      * @return resolved property value
      * @throws IllegalArgumentException when properties are circularly defined
      */
-    public String getPropertyValue(String key, Properties properties, Properties environment) {
+    public static String getPropertyValue(String key, Properties properties, Properties environment) {
         String value = properties.getProperty(key);
 
         ExpansionBuffer buffer = new ExpansionBuffer(value);
@@ -51,11 +51,11 @@ public class PropertyResolver {
         return resolveValue(buffer, circularDefinitionPreventer, properties, environment);
     }
 
-    public String resolveValue(String value, Properties properties, Properties environment) {
+    public static String resolveValue(String value, Properties properties, Properties environment) {
         return resolveValue(new ExpansionBuffer(value), new CircularDefinitionPreventer(), properties, environment);
     }
 
-    private String resolveValue(ExpansionBuffer buffer, CircularDefinitionPreventer circularDefinitionPreventer, Properties properties, Properties environment) {
+    private static String resolveValue(ExpansionBuffer buffer, CircularDefinitionPreventer circularDefinitionPreventer, Properties properties, Properties environment) {
         while (buffer.hasMoreLegalPlaceholders()) {
             String newKey = buffer.extractPropertyKey();
             String newValue = fromPropertiesThenSystemThenEnvironment(newKey, properties, environment);
@@ -69,7 +69,7 @@ public class PropertyResolver {
 
     }
 
-    private String fromPropertiesThenSystemThenEnvironment(String key, Properties properties, Properties environment) {
+    private static String fromPropertiesThenSystemThenEnvironment(String key, Properties properties, Properties environment) {
         String value = properties.getProperty(key);
 
         // try global environment
