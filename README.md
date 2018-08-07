@@ -124,6 +124,7 @@ All of the solutions to these issues are implemented independently in different 
                             <hotfixBranchPropertyFile>foo/bar/emer.props</hotfixBranchPropertyFile>
                             <releaseBranchPropertyFile>foo/bar/test.props</releaseBranchPropertyFile>
                             <developmentBranchPropertyFile>foo/bar/dev.props</developmentBranchPropertyFile>
+                            <featureOrBugfixBranchPropertyFile>foo/bar/feat.props</featureOrBugfixBranchPropertyFile>
                             <otherBranchPropertyFile>foo/bar/ci.props</otherBranchPropertyFile>
                             <undefinedBranchPropertyFile>foo/bar/local.props</undefinedBranchPropertyFile>
                         </configuration>
@@ -143,8 +144,8 @@ One common stumbling block for teams adjusting to gitflow with Maven projects is
 In practice, the Maven versions should:
  
  * Be synchronized with release branch and hotfix branch names.
- * Never be -SNAPSHOT in the master, support, release, or hotfix branches.
- * Always be -SNAPSHOT in the develop branch.
+ * Never be -SNAPSHOT in the master, support, release, or hotfix branches. Also, no -SNAPSHOT parent or (plugin) dependencies are allowed. (This condition may be disabled by setting `enforceNonSnapshots` = `false`.)
+ * Always be -SNAPSHOT in the feature and develop branches.
  * Be irrelevant if there's no git branch resolvable from your environment.
 
 The `enforce-versions` goal asserts these semantics when it can resolve the `gitBranchExpression`.
@@ -158,11 +159,16 @@ The following properties change the behavior of this goal:
 | Property             | Default Value | SNAPSHOT allowed? | Description |
 | -------------------- | ------------- | --------------------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | n/a | Maven property expression to resolve in order to determine the current git branch |
+| deploySnapshotTypeBranches  | `false` | n/a | When `true`, the POM version should end with the feature branch name and -SNAPSHOT, e.g. `1.0.0-myfeature-SNAPSHOT`. This prevents a feature branch snapshot from "overwriting" a snapshot from the develop branch. |
+| enforceNonSnapshots | `true` | n/a | When `true`, enforce the requirement that none of the following may contain a -SNAPSHOT: the POM version, any parent, or any (plugin) dependencies. |
+| releaseBranchMatchType  | `equals` | n/a | When `equals`, the POM version should be identical to the branch name for release and hotfix branches (e.g. POM version should be `1.0.0` for branch `release/1.0.0`). When `startsWith`, POM version should start with the name branch (e.g. POM version could be `1.0.1` for branch `release/1.0`. When using the `update-stage-dependencies` mojo, set to `equals`, otherwise set to `startsWith`. |
 | masterBranchPattern  | (origin/)?master | No | Regex. When matched, signals the master branch is being built. |
 | supportBranchPattern | (origin/)?support/(.*) | No | Regex. When matches, signals a support branch (long term master-equivalent for older release) being built. Last subgroup, if present, must be start of the Maven project version. |
 | releaseBranchPattern | (origin/)?release/(.*) | No | Regex. When matched, signals a release branch being built. Last subgroup, if present, must match the Maven project version. |
 | hotfixBranchPattern  | (origin/)?hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Last subgroup, if present, must match the Maven project version. |
+| featureOrBugfixBranchPattern | (origin/)?(?:feature&#124;bugfix)/(.*) | Yes | Regex. When matched, signals a feature or bugfix branch is being built. |
 | developmentBranchPattern | (origin/)?develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
+
 
 ## Goal: `retarget-deploy` (Branch Specific Deploy Targets & Staging)
 
@@ -179,9 +185,11 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 | Property | Default Value | Description | 
 | -------- | ------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
+| deploySnapshotTypeBranches  | `false` | When `true`, feature branches will also be deployed to the snapshots repository. |
 | releaseDeploymentRepository | n/a | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern` or `supportBranchPattern`) |
 | stageDeploymentRepository | n/a | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern`) | 
 | snapshotDeploymentRepository | n/a | The repository to use for snapshots. (Builds matching `developmentBranchPattern`) |
+
 
 **The repository properties should follow the following format**, `id::layout::url::uniqueVersion`.
 
@@ -250,11 +258,11 @@ properties from files with an assigned keyPrefix, letting you name-space propert
 The maven `-U` command line switch does a fine job of updating SNAPSHOT versions from snapshot repositories, there is no
 built-in way to force maven to re-resolve non-snapshot release versions. This goal addresses that shortcoming in a fairly
 straight-forward manner. Any release version dependency of the project which was provided to the local repository by a
-remote repository with the same ID as the `<stageDeploymentRepository>`, will be purged from the local repository and 
+remote repository with the same ID as the `<stageDeploymentRepository>`, will be purged from the local repository and
 re-resolved (so you get the latest version from either the stage repository, or your release repository).
 
-It is **very important** if you're using this goal, that the **`stageDeploymentReposity` have a unique repository/server id**. 
-If you use the same ID for release, snapshot, and stage, every time you exeucte this goal, every release version 
+It is **very important** if you're using this goal, that the **`stageDeploymentReposity` have a unique repository/server id**.
+If you use the same ID for release, snapshot, and stage, every time you exeucte this goal, every release version
 dependency will be purged and re-resolved.
 
 If you have a local build / install of a release version, this goal will currently not update that package, by design.
@@ -299,7 +307,7 @@ To accomplish this the `promote-master` goal and a Maven build extension work to
 
 With the build extension added to your project, any build where the `gitBranchExpression` matches the `masterBranchPattern` or `supportBranchPattern` will have it's
 build lifecycle (plugins, goals, etc) altered. Any plugin other than the gitflow-helper-maven-plugin, the maven-deploy-plugin, or plugins with goals
- explicitly referenced on the command line  will be ignored (removed from the project reactor). 
+ explicitly referenced on the command line will be ignored (removed from the project reactor). 
 This allows us to enforce the ideal that code should never be built in the master branch.
 
 The `promote-master` goal executes when the `gitBranchExpression` resolves to a value matching the `masterBranchPattern` or `supportBranchPattern` regular expression.
@@ -331,6 +339,7 @@ The following table describes the git branch expression -> repository used for r
 | supportBranchPattern  | release    |
 | releaseBranchPattern  | stage      |
 | hotfixBranchPattern   | stage      |
+| featureOrBugfixBranchPattern | snapshots | 
 | developmentBranchPattern | snapshots | 
 | All Others            | local      |
  
@@ -352,3 +361,15 @@ it's building. The attach-deploy will 'clean' the maven project, then download t
 that the first build deployed into. Once they're attached to the project, the `jboss-as:deploy-only` goal will deliver
 the artifacts built by the first job into a jboss application server.
 
+
+# Resolving the Git branch name
+As stated before, the plugin determines what to do by resolving the Git branch name.
+
+ * The first try is a `git symbolic-ref HEAD` to check the local branch name. If it's found, that's the branch name that's used.
+ * If the `symbolic-ref` fails then it's probably due to a detached HEAD. This typically happens on Jenkins, when it simply checks out the commit hash that was just pushed.
+   Or, it's because of a developer doing a `git checkout origin/feature/x`, e.g. when doing a code review and no local branch is required.
+   In such a case:
+    * The plugin will first resolve the HEAD to a commit using `git rev-parse HEAD`.
+    * Next, it will do a `git show-ref` to check which (local/remote) branches point to the commit.
+    * If it can resolve the commit to a single branch type (e.g. develop or master) then that's the branch name that's used.
+ * If all of the above fails, `${env.GIT_BRANCH}` is tried.

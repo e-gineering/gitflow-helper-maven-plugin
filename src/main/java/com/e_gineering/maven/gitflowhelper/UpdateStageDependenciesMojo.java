@@ -33,7 +33,7 @@ public class UpdateStageDependenciesMojo extends AbstractGitflowBasedRepositoryM
     ProjectDependenciesResolver dependenciesResolver;
 
     @Override
-    protected void execute(GitBranchType type, String gitBranch, String branchPattern) throws MojoExecutionException, MojoFailureException {
+    protected void execute(final GitBranchInfo branchInfo) throws MojoExecutionException, MojoFailureException {
         getLog().debug("update-stage-dependencies setting up Repository session...");
 
         DefaultRepositorySystemSession reresolveSession = new DefaultRepositorySystemSession(session);

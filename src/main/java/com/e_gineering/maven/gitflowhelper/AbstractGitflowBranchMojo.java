@@ -21,14 +21,11 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
 
     private Properties systemEnvVars = new Properties();
 
-    private PropertyResolver resolver = new PropertyResolver();
-
-
-    @Component
-    protected MavenProject project;
-
     @Component
     protected ScmManager scmManager;
+
+    @Parameter(defaultValue = "${project}", readonly = true)
+    protected MavenProject project;
 
     @Parameter(defaultValue = "(origin/)?master", property = "masterBranchPattern", required = true)
     private String masterBranchPattern;
@@ -45,68 +42,63 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     @Parameter(defaultValue = "(origin/)?develop", property = "developmentBranchPattern", required = true)
     private String developmentBranchPattern;
 
-    // @Parameter tag causes property resolution to fail for patterns containing ${env.}. Default provided in execute();
+    @Parameter(defaultValue = "(origin/)?(?:feature|bugfix)/(.*)", property = "featureOrBugfixBranchPattern", required = true)
+    private String featureOrBugfixBranchPattern;
+
+    // An expression that resolves to the git branch at run-time.
+    // @Parameter tag causes property resolution to fail for patterns containing ${env.}.
+    // The default value _must_ be provided programmaticially at run-time.
     @Parameter(property = "gitBranchExpression", required = false)
     private String gitBranchExpression;
 
-    protected abstract void execute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException;
+    @Parameter(defaultValue = "false", property = "deploySnapshotTypeBranches")
+    boolean deploySnapshotTypeBranches;
+
+    @Parameter(defaultValue = "equals", property = "releaseBranchMatchType", required = true)
+    String releaseBranchMatchType;
 
     /**
-     * Method exposing Property Resolving for subclasses.
+     * Convenience Method exposing Property Resolving for subclasses.
      *
      * @param expression
      * @return
      */
     protected String resolveExpression(final String expression) {
-        return resolver.resolveValue(expression, project.getProperties(), systemEnvVars);
+        return PropertyResolver.resolveValue(expression, project.getProperties(), systemEnvVars);
     }
 
-    private void logExecute(final GitBranchType type, final String gitBranch, final String branchPattern) throws MojoExecutionException, MojoFailureException {
-        getLog().debug("Building for GitBranchType: " + type.name() + ". gitBranch: '" + gitBranch + "' branchPattern: '" + branchPattern + "'");
-        execute(type, gitBranch, branchPattern);
-    }
+    /**
+     * Method to be implemented by branch-aware mojos
+     *
+     * @param currentBranch
+     *
+     * @throws MojoExecutionException
+     * @throws MojoFailureException
+     */
+    protected abstract void execute(final GitBranchInfo currentBranch) throws MojoExecutionException, MojoFailureException;
 
     public void execute() throws MojoExecutionException, MojoFailureException {
-        if (gitBranchExpression == null) {
-            gitBranchExpression = ScmUtils.resolveBranchOrExpression(scmManager, project, getLog());
-        }
-
+        // Weather we resolve a single branch name or not, it won't hurt to run it through property replacement.
         try {
             systemEnvVars = CommandLineUtils.getSystemEnvVars();
         } catch (IOException ioe) {
             throw new MojoExecutionException("Unable to read System Envirionment Variables: ", ioe);
         }
 
-        // Try to resolve the gitBranchExpression to an actual Value...
-        String gitBranch = resolveExpression(gitBranchExpression);
-        ExpansionBuffer eb = new ExpansionBuffer(gitBranch);
+        // Validate the match type.
+        checkReleaseBranchMatchTypeParam();
 
-        if (!gitBranchExpression.equals(gitBranch) || getLog().isDebugEnabled()) { // Resolves Issue #9
-            getLog().debug("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + gitBranch + "'");
-        }
+        ScmUtils scmUtils = new ScmUtils(systemEnvVars, scmManager, project, getLog(), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
+        GitBranchInfo branchInfo = scmUtils.resolveBranchInfo(gitBranchExpression);
 
-        if (!eb.hasMoreLegalPlaceholders()) {
-            /*
-             * (/origin/)?master goes to the maven 'release' repo.
-             * (/origin/)?release/(.*) , (/origin/)?hotfix/(.*) , and (/origin/)?bugfix/(.*) go to the maven 'stage' repo.
-             * (/origin/)?develop goes to the 'snapshot' repo.
-             * All other builds will use the default semantics for 'deploy'.
-             */
-            if (gitBranch.matches(masterBranchPattern)) {
-                logExecute(GitBranchType.MASTER, gitBranch, masterBranchPattern);
-            } else if (gitBranch.matches(supportBranchPattern)) {
-                logExecute(GitBranchType.SUPPORT, gitBranch, supportBranchPattern);
-            } else if (gitBranch.matches(releaseBranchPattern)) {
-                logExecute(GitBranchType.RELEASE, gitBranch, releaseBranchPattern);
-            } else if (gitBranch.matches(hotfixBranchPattern)) {
-                logExecute(GitBranchType.HOTFIX, gitBranch, hotfixBranchPattern);
-            } else if (gitBranch.matches(developmentBranchPattern)) {
-                logExecute(GitBranchType.DEVELOPMENT, gitBranch, developmentBranchPattern);
-            } else {
-                logExecute(GitBranchType.OTHER, gitBranch, null);
-            }
-        } else {
-            logExecute(GitBranchType.UNDEFINED, gitBranch, null);
+        getLog().debug("Building for: " + branchInfo);
+        execute(branchInfo);
+    }
+
+    private void checkReleaseBranchMatchTypeParam() throws MojoFailureException {
+        if (!"equals".equals(releaseBranchMatchType) && !"startsWith".equals(releaseBranchMatchType)) {
+            throw new MojoFailureException("'releaseBranchMatchType' should be either 'equals' or 'startsWith'. Found '" + releaseBranchMatchType + "'.");
         }
     }
 }
+
