@@ -124,7 +124,6 @@ All of the solutions to these issues are implemented independently in different 
                             <hotfixBranchPropertyFile>foo/bar/emer.props</hotfixBranchPropertyFile>
                             <releaseBranchPropertyFile>foo/bar/test.props</releaseBranchPropertyFile>
                             <developmentBranchPropertyFile>foo/bar/dev.props</developmentBranchPropertyFile>
-                            <featureOrBugfixBranchPropertyFile>foo/bar/feat.props</featureOrBugfixBranchPropertyFile>
                             <otherBranchPropertyFile>foo/bar/ci.props</otherBranchPropertyFile>
                             <undefinedBranchPropertyFile>foo/bar/local.props</undefinedBranchPropertyFile>
                         </configuration>
@@ -144,9 +143,9 @@ One common stumbling block for teams adjusting to gitflow with Maven projects is
 In practice, the Maven versions should:
  
  * Be synchronized with release branch and hotfix branch names.
- * Never be -SNAPSHOT in the master, support, release, or hotfix branches. Also, no -SNAPSHOT parent or (plugin) dependencies are allowed. (This condition may be disabled by setting `enforceNonSnapshots` = `false`.)
- * Always be -SNAPSHOT in the feature and develop branches.
- * Be irrelevant if there's no git branch resolvable from your environment.
+ * Never be -SNAPSHOT in the master, support, release, or hotfix branches. Also, no -SNAPSHOT parent or (plugin) dependencies are allowed.
+ * Always be -SNAPSHOT in the develop branch.
+ * Be irrelevant if there's no git branch resolvable from your environment or working in a branch which is not deployed to remote repositories.
 
 The `enforce-versions` goal asserts these semantics when it can resolve the `gitBranchExpression`.
 
@@ -166,7 +165,6 @@ The following properties change the behavior of this goal:
 | supportBranchPattern | (origin/)?support/(.*) | No | Regex. When matches, signals a support branch (long term master-equivalent for older release) being built. Last subgroup, if present, must be start of the Maven project version. |
 | releaseBranchPattern | (origin/)?release/(.*) | No | Regex. When matched, signals a release branch being built. Last subgroup, if present, must match the Maven project version. |
 | hotfixBranchPattern  | (origin/)?hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Last subgroup, if present, must match the Maven project version. |
-| featureOrBugfixBranchPattern | (origin/)?(?:feature&#124;bugfix)/(.*) | Yes | Regex. When matched, signals a feature or bugfix branch is being built. |
 | developmentBranchPattern | (origin/)?develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
 
 
@@ -185,7 +183,6 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 | Property | Default Value | Description | 
 | -------- | ------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
-| deploySnapshotTypeBranches  | `false` | When `true`, feature branches will also be deployed to the snapshots repository. |
 | releaseDeploymentRepository | n/a | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern` or `supportBranchPattern`) |
 | stageDeploymentRepository | n/a | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern`) | 
 | snapshotDeploymentRepository | n/a | The repository to use for snapshots. (Builds matching `developmentBranchPattern`) |
@@ -339,7 +336,6 @@ The following table describes the git branch expression -> repository used for r
 | supportBranchPattern  | release    |
 | releaseBranchPattern  | stage      |
 | hotfixBranchPattern   | stage      |
-| featureOrBugfixBranchPattern | snapshots | 
 | developmentBranchPattern | snapshots | 
 | All Others            | local      |
  
@@ -360,7 +356,6 @@ The second job would have a clean workspace, with the proper version of the proj
 it's building. The attach-deploy will 'clean' the maven project, then download the binary artifacts from the repository
 that the first build deployed into. Once they're attached to the project, the `jboss-as:deploy-only` goal will deliver
 the artifacts built by the first job into a jboss application server.
-
 
 # Resolving the Git branch name
 As stated before, the plugin determines what to do by resolving the Git branch name.

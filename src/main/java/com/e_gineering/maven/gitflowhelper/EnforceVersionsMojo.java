@@ -44,27 +44,6 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
             }
         } else if (GitBranchType.SNAPSHOT_TYPES.contains(branchInfo.getType()) && !ArtifactUtils.isSnapshot(project.getVersion())) {
             throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
-        } else if (GitBranchType.FEATURE_OR_BUGFIX_BRANCH.equals(branchInfo.getType()) && deploySnapshotTypeBranches) {
-            checkFeatureOrBugfixBranchVersion(branchInfo);
-        }
-    }
-
-    private void checkFeatureOrBugfixBranchVersion(final GitBranchInfo branchInfo) throws MojoFailureException {
-        // For FEATURE and BUGFIX branches, check if the POM version includes the branch name
-        Matcher gitMatcher = Pattern.compile(branchInfo.getPattern()).matcher(branchInfo.getName());
-        if (gitMatcher.matches()) {
-            String branchName = gitMatcher.group(gitMatcher.groupCount());
-            String v = project.getVersion();
-            String branchNameSnapshot = branchName + "-" + Artifact.SNAPSHOT_VERSION;
-            if (v.length() < branchNameSnapshot.length() || !v.regionMatches(
-                    true,
-                    v.length() - branchNameSnapshot.length(),
-                    branchNameSnapshot,
-                    0,
-                    branchNameSnapshot.length())
-                    ) {
-                throw new MojoFailureException("The project's version should end with [" + branchNameSnapshot + "]");
-            }
         }
     }
 

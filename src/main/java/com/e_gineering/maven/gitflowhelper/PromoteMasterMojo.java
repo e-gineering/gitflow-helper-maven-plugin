@@ -20,11 +20,10 @@ public class PromoteMasterMojo extends AbstractGitflowBasedRepositoryMojo {
     @Override
     protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {
         switch (gitBranchInfo.getType()) {
-            case FEATURE_OR_BUGFIX_BRANCH:
             case DEVELOPMENT:
             case HOTFIX:
             case RELEASE: {
-                // In order to use promote-master or attach-deployed, we need to build an artifactCatalog on deliverable branches.
+                // In order to use promote-master or attach-deployed, we need to build an artifactCatalog on deployable branches.
                 attachArtifactCatalog();
                 break;
             }
