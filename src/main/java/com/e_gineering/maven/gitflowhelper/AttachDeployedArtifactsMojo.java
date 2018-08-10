@@ -29,7 +29,6 @@ public class AttachDeployedArtifactsMojo extends AbstractGitflowBasedRepositoryM
                 attachExistingArtifacts(stageDeploymentRepository, true);
                 break;
             }
-            case FEATURE_OR_BUGFIX_BRANCH:
             case DEVELOPMENT: {
                 getLog().info("Attaching artifacts from snapshot repository...");
                 attachExistingArtifacts(snapshotDeploymentRepository, true);
