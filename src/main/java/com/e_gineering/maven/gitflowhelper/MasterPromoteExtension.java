@@ -171,7 +171,6 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
             ScmUtils scmUtils = new ScmUtils(systemEnvVars, scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
             GitBranchInfo branchInfo = scmUtils.resolveBranchInfo(gitBranchExpression);
 
-            //GitBranchInfo branchInfo = ScmUtils.getGitBranchInfo(scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), gitBranchExpression, masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
             boolean pruneBuild = false;
             if (branchInfo != null) {
                 logger.info(branchInfo.toString());

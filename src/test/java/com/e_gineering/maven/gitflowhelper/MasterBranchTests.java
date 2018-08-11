@@ -4,7 +4,7 @@ import org.apache.maven.it.VerificationException;
 import org.apache.maven.it.Verifier;
 import org.junit.Test;
 
-public class EnforceVersionsIT extends AbstractIntegrationTest {
+public class MasterBranchTests extends AbstractIntegrationTest {
 
 	@Test()
 	public void testMasterReleaseVersion() throws Exception {
@@ -56,10 +56,5 @@ public class EnforceVersionsIT extends AbstractIntegrationTest {
 		} else {
 			assertTrue(true);
 		}
-	}
-
-	@Test
-	public void testSupportReleaseVersion() {
-
 	}
 }

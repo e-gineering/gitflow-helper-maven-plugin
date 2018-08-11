@@ -6,6 +6,14 @@
 	<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
 	<version>${gitflow.project.version}</version>
 
+	<dependencies>
+		<dependency>
+			<groupId>com.e-gineering</groupId>
+			<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
+			<version>${gitflow.project.version}</version>
+		</dependency>
+	</dependencies>
+
 	<build>
 		<plugins>
 			<plugin>
