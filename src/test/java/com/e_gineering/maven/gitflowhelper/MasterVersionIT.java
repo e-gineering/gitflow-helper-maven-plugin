@@ -4,7 +4,7 @@ import org.apache.maven.it.VerificationException;
 import org.apache.maven.it.Verifier;
 import org.junit.Test;
 
-public class ExtensionIT extends AbstractIntegrationTest {
+public class MasterVersionIT extends AbstractIntegrationTest {
 
 	@Test()
 	public void testMasterReleaseVersion() throws Exception {
