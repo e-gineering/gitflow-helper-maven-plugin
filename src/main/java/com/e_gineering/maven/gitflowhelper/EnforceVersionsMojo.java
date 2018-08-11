@@ -27,7 +27,7 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
 
     @Override
     protected void execute(final GitBranchInfo branchInfo) throws MojoExecutionException, MojoFailureException {
-        if (GitBranchType.VERSIONED_TYPES.contains(branchInfo.getType())) {
+        if (branchInfo.isVersioned()) {
             getLog().debug("Versioned Branch: " + branchInfo);
             Matcher gitMatcher = Pattern.compile(branchInfo.getPattern()).matcher(branchInfo.getName());
 
@@ -56,7 +56,7 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
                     }
                 }
             }
-        } else if (GitBranchType.SNAPSHOT_TYPES.contains(branchInfo.getType()) && !ArtifactUtils.isSnapshot(project.getVersion())) {
+        } else if (branchInfo.isSnapshot() && !ArtifactUtils.isSnapshot(project.getVersion())) {
             throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
         }
     }
