@@ -6,6 +6,27 @@
 	<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
 	<version>${gitflow.project.version}</version>
 
+	<repositories>
+		<repository>
+			<id>releases</id>
+			<url>file:${it.repository.basedir}/releases</url>
+			<snapshots><enabled>false</enabled></snapshots>
+			<releases><enabled>true</enabled></releases>
+		</repository>
+		<repository>
+			<id>test-releases</id>
+			<url>file:${it.repository.basedir}/test-releases</url>
+			<snapshots><enabled>false</enabled></snapshots>
+			<releases><enabled>true</enabled></releases>
+		</repository>
+		<repository>
+			<id>snapshots</id>
+			<url>file:${it.repository.basedir}/snapshots</url>
+			<snapshots><enabled>true</enabled></snapshots>
+			<releases><enabled>false</enabled></releases>
+		</repository>
+	</repositories>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.e-gineering</groupId>

@@ -52,6 +52,7 @@
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <it.repository.basedir>${project.build.directory}/it-repositories</it.repository.basedir>
     </properties>
 
     <distributionManagement>
@@ -260,7 +261,7 @@
                             <execution>
                                 <configuration>
                                     <systemProperties>
-                                        <maven.repo.local>${project.build.directory}/localrepo</maven.repo.local>
+                                        <maven.repo.local>${it.repository.basedir}/local</maven.repo.local>
                                         <project.version>${project.version}</project.version>
                                         <argLine>${failsafe.jacoco.argLine}</argLine>
                                     </systemProperties>
@@ -273,14 +274,14 @@
                         </executions>
                     </plugin>
 
-                    <!-- Copy the packaged artifact to the localrepo used by the integration tests -->
+                    <!-- Copy the packaged artifact to the local repository used by the integration tests -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-install-plugin</artifactId>
                         <executions>
                             <execution>
                                 <configuration>
-                                    <localRepositoryPath>${project.build.directory}/localrepo</localRepositoryPath>
+                                    <localRepositoryPath>${it.repository.basedir}/local</localRepositoryPath>
                                     <groupId>${project.groupId}</groupId>
                                     <artifactId>${project.artifactId}</artifactId>
                                     <version>${project.version}</version>

@@ -2,12 +2,9 @@ package com.e_gineering.maven.gitflowhelper;
 
 import org.apache.maven.it.VerificationException;
 import org.apache.maven.it.Verifier;
-import org.junit.Test;
 
-public class MasterBranchTests extends AbstractIntegrationTest {
-
-	@Test()
-	public void testMasterReleaseVersion() throws Exception {
+public class MasterBranchIT extends AbstractIntegrationTest {
+	public void testReleaseVersionSuccess() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
 
 		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
@@ -20,7 +17,7 @@ public class MasterBranchTests extends AbstractIntegrationTest {
 		verifier.resetStreams();
 	}
 
-	public void testMasterReleaseSnapshotFailure() throws Exception {
+	public void testSnapshotVersionFailure() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/master", "1.0.0-SNAPSHOT");
 
 		try {
@@ -37,8 +34,7 @@ public class MasterBranchTests extends AbstractIntegrationTest {
 		}
 	}
 
-	@Test()
-	public void testMasterReleaseSnapshotPluginFailure() throws Exception {
+	public void testSnapshotPluginFailure() throws Exception {
 		if (System.getProperty("project.version", "").endsWith("-SNAPSHOT")) {
 			Verifier verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
 
