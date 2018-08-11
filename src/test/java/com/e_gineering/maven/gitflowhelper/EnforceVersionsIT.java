@@ -4,7 +4,7 @@ import org.apache.maven.it.VerificationException;
 import org.apache.maven.it.Verifier;
 import org.junit.Test;
 
-public class MasterVersionIT extends AbstractIntegrationTest {
+public class EnforceVersionsIT extends AbstractIntegrationTest {
 
 	@Test()
 	public void testMasterReleaseVersion() throws Exception {
@@ -20,8 +20,25 @@ public class MasterVersionIT extends AbstractIntegrationTest {
 		verifier.resetStreams();
 	}
 
-	@Test()
 	public void testMasterReleaseSnapshotFailure() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/master", "1.0.0-SNAPSHOT");
+
+		try {
+			verifier.executeGoal("gitflow-helper:enforce-versions");
+			assertTrue(false); // Should never get here.
+		} catch (VerificationException ve) {
+			// Expected outcome
+			assertTrue(true);
+		} finally {
+			verifier.verifyTextInLog("GitBranchInfo:");
+			verifier.verifyTextInLog("The maven project or one of its parents is currently a snapshot version.");
+
+			verifier.resetStreams();
+		}
+	}
+
+	@Test()
+	public void testMasterReleaseSnapshotPluginFailure() throws Exception {
 		if (System.getProperty("project.version", "").endsWith("-SNAPSHOT")) {
 			Verifier verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
 
@@ -39,5 +56,10 @@ public class MasterVersionIT extends AbstractIntegrationTest {
 		} else {
 			assertTrue(true);
 		}
+	}
+
+	@Test
+	public void testSupportReleaseVersion() {
+
 	}
 }
