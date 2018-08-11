@@ -3,7 +3,7 @@ package com.e_gineering.maven.gitflowhelper;
 import org.apache.maven.it.VerificationException;
 import org.apache.maven.it.Verifier;
 
-public class MasterBranchIT extends AbstractIntegrationTest {
+public class MasterSupportBranchIT extends AbstractIntegrationTest {
 	public void testReleaseVersionSuccess() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
 
