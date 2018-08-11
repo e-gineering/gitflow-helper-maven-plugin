@@ -47,6 +47,14 @@ public abstract class AbstractIntegrationTest extends TestCase {
 
 		verifier.setAutoclean(false);
 
+		if (System.getProperty("argLine", "").length() > 0) {
+			String opts = "";
+			if (verifier.getEnvironmentVariables().get("MAVEN_OPTS") != null) {
+				opts += verifier.getEnvironmentVariables().get("MAVEN_OPTS");
+			}
+			opts += System.getProperty("argLine", "");
+			verifier.setEnvironmentVariable("MAVEN_OPTS", opts);
+		}
 		verifier.getCliOptions().add("-Dgitflow.project.version=" + gitflowProjectVersion);
 		verifier.getEnvironmentVariables().put("GIT_BRANCH", gitBranch);
 
