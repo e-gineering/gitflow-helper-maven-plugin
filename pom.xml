@@ -115,12 +115,6 @@
             <artifactId>aether-util</artifactId>
             <version>0.9.0.M2</version>
         </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.2</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -179,6 +173,91 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>testing</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <testResources>
+                    <testResource>
+                        <directory>src/test/java</directory>
+                    </testResource>
+                    <testResource>
+                        <directory>src/test/resources</directory>
+                        <filtering>true</filtering>
+                    </testResource>
+                </testResources>
+                <plugins>
+                    <!-- disable surefire so we do integration testing only -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.12.4</version>
+                        <configuration>
+                            <skipTests>true</skipTests>
+                        </configuration>
+                    </plugin>
+
+                    <!-- Enable failsafe for integration testing -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>2.22.0</version>
+                        <executions>
+                            <execution>
+                                <configuration>
+                                    <systemProperties>
+                                        <maven.repo.local>${project.build.directory}/localrepo</maven.repo.local>
+                                        <project.version>${project.version}</project.version>
+                                    </systemProperties>
+                                </configuration>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Copy the packaged artifact to the localrepo used by the integration tests -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-install-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <configuration>
+                                    <localRepositoryPath>${project.build.directory}/localrepo</localRepositoryPath>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <pomFile>${pom.basedir}/pom.xml</pomFile>
+                                    <file>${project.build.directory}${file.separator}${project.build.finalName}.jar</file>
+                                </configuration>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>install-file</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.maven.shared</groupId>
+                    <artifactId>maven-verifier</artifactId>
+                    <version>1.6</version>
+                </dependency>
+                <dependency>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                    <version>4.8.2</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
         <profile>
             <id>eg.oss</id>
             <activation>
