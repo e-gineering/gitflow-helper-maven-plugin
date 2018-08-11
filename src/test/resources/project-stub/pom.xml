@@ -6,6 +6,8 @@
 	<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
 	<version>${gitflow.project.version}</version>
 
+	<packaging>jar</packaging>
+
 	<repositories>
 		<repository>
 			<id>releases</id>
@@ -27,14 +29,6 @@
 		</repository>
 	</repositories>
 
-	<dependencies>
-		<dependency>
-			<groupId>com.e-gineering</groupId>
-			<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
-			<version>${gitflow.project.version}</version>
-		</dependency>
-	</dependencies>
-
 	<build>
 		<plugins>
 			<plugin>
@@ -42,6 +36,23 @@
 				<artifactId>gitflow-helper-maven-plugin</artifactId>
 				<version>${project.version}</version>
 				<extensions>true</extensions>
+				<configuration>
+					<releaseDeploymentRepository>releases</releaseDeploymentRepository>
+					<stageDeploymentRepository>test-releases</stageDeploymentRepository>
+					<snapshotDeploymentRepository>snapshots</snapshotDeploymentRepository>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>enforce-versions</goal>
+							<goal>retarget-deploy</goal>
+							<goal>update-stage-dependencies</goal>
+							<goal>set-properties</goal>
+							<goal>tag-master</goal>
+							<goal>promote-master</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
