@@ -5,14 +5,11 @@ import org.junit.Assume;
 import org.junit.internal.AssumptionViolatedException;
 
 public class DevelopBranchIT extends AbstractIntegrationTest {
-	private static boolean deployPassed = false;
-
 	/**
 	 * Non-snapshot versions on the develop branch should fail.
 	 */
 	public void testNonSnapshotDeployFails() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/develop", "1.0.0");
-		verifier.setAutoclean(true);
 		try {
 			verifier.executeGoal("deploy");
 		} catch (Exception ex) {
@@ -28,13 +25,11 @@ public class DevelopBranchIT extends AbstractIntegrationTest {
 	public void testSnapshotDeploySuccess() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/develop", "1.0.0-SNAPSHOT");
 
-		verifier.setAutoclean(true);
 		verifier.executeGoal("deploy");
 
 		verifier.verifyErrorFreeLog();
 
 		verifier.resetStreams();
-		deployPassed = true;
 	}
 
 	/**
@@ -42,15 +37,18 @@ public class DevelopBranchIT extends AbstractIntegrationTest {
 	 *
 	 * @throws Exception
 	 */
-	public void ttachExistingArtifacts() throws Exception {
-		// If it didn't pass...
-		try {
-			Assume.assumeTrue(deployPassed);
-		} catch (AssumptionViolatedException ave) {
-			Assume.assumeNoException(ave);
-		}
-
+	public void testAttachExistingArtifacts() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/develop", "1.0.0-SNAPSHOT");
+
+		verifier.executeGoal("deploy");
+
+		verifier.verifyErrorFreeLog();
+
+		verifier.resetStreams();
+
+
+		// New verifier to attach existing artifacts
+		verifier = createVerifier("/project-stub", "origin/develop", "1.0.0-SNAPSHOT");
 
 		verifier.executeGoal("gitflow-helper:attach-deployed");
 

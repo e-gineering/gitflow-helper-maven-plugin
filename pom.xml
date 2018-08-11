@@ -192,7 +192,7 @@
                     <reportSet>
                         <reports>
                             <!-- select non-aggregate reports -->
-                            <report>report-integration</report>
+                            <report>report</report>
                         </reports>
                     </reportSet>
                 </reportSets>
@@ -239,13 +239,17 @@
                                     <goal>prepare-agent</goal>
                                 </goals>
                             </execution>
+                            <!-- Jacoco Is configured to munge the results of the normal unit tests
+                                 and integration tests into the same output file.
+                                 This gives us a 'global view' of all tested code paths.
+                             -->
                             <execution>
                                 <id>pre-integration-test</id>
                                 <goals>
                                     <goal>prepare-agent-integration</goal>
                                 </goals>
                                 <configuration>
-                                    <propertyName>failsafe.jacoco.argLine</propertyName>
+                                    <destFile>${project.build.directory}/jacoco.exec</destFile>
                                 </configuration>
                             </execution>
                         </executions>
@@ -263,8 +267,9 @@
                                     <systemProperties>
                                         <maven.repo.local>${it.repository.basedir}/local</maven.repo.local>
                                         <project.version>${project.version}</project.version>
-                                        <argLine>${failsafe.jacoco.argLine}</argLine>
+                                        <argLine>${argLine}</argLine>
                                     </systemProperties>
+                                    <forkCount>1</forkCount>
                                 </configuration>
                                 <goals>
                                     <goal>integration-test</goal>

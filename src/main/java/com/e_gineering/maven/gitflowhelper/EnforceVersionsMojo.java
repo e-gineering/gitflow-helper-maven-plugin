@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 /**
  * If there is an ${env.GIT_BRANCH} property, assert that the current ${project.version} is semantically correct for the
- * git branch. Also, make sure there are no SNAPSHOT (plugin) dependencies.
+ * git branch. Also, make sure there are no SNAPSHOT (plugin) dependencies if enforceNonSnapshots = true.
  */
 @Mojo(requiresDependencyCollection = ResolutionScope.TEST, name = "enforce-versions", defaultPhase = LifecyclePhase.VALIDATE)
 public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
@@ -33,13 +33,27 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
 
             // We're in a versioned branch, we expect a non-SNAPSHOT version in the POM.
             if (gitMatcher.matches()) {
-                if (enforceNonSnapshots) {
-                    checkForSnapshots(branchInfo);
+                // Always assert that pom versions match our expectations.
+                if (hasSnapshotInModel(project)) {
+                    throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is defined as a release branch. The maven project or one of its parents is currently a snapshot version.");
                 }
 
                 // Non-master version branches require a pom version match of some kind to the branch subgroups.
                 if (gitMatcher.groupCount() > 0 && gitMatcher.group(gitMatcher.groupCount()) != null) {
                     checkReleaseTypeBranchVersion(branchInfo, gitMatcher);
+                }
+
+                // Optionally (default true) reinforce that no dependencies may be snapshots.
+                if (enforceNonSnapshots) {
+                    Set<String> snapshotDeps = getSnapshotDeps();
+                    if (!snapshotDeps.isEmpty()) {
+                        throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT dependencies: " + snapshotDeps.toString());
+                    }
+
+                    Set<String> snapshotPluginDeps = getSnapshotPluginDeps();
+                    if (!snapshotPluginDeps.isEmpty()) {
+                        throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT plugin dependencies: " + snapshotPluginDeps.toString());
+                    }
                 }
             }
         } else if (GitBranchType.SNAPSHOT_TYPES.contains(branchInfo.getType()) && !ArtifactUtils.isSnapshot(project.getVersion())) {
@@ -70,22 +84,6 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
                     throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] expected the maven project version to start with: [" + releaseBranchVersion + "], but the maven project version is: [" + project.getVersion() + "]");
                 }
             }
-        }
-    }
-
-    private void checkForSnapshots(final GitBranchInfo gitBranchInfo) throws MojoFailureException {
-        if (hasSnapshotInModel(project)) {
-            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project or one of its parents is currently a snapshot version.");
-        }
-
-        Set<String> snapshotDeps = getSnapshotDeps();
-        if (!snapshotDeps.isEmpty()) {
-            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT dependencies: " + snapshotDeps.toString());
-        }
-
-        Set<String> snapshotPluginDeps = getSnapshotPluginDeps();
-        if (!snapshotPluginDeps.isEmpty()) {
-            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT plugin dependencies: " + snapshotPluginDeps.toString());
         }
     }
 

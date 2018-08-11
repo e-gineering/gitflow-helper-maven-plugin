@@ -378,5 +378,5 @@ Configure the Maven commandline to include
 
 ### To inspect code-coverage results from Integration Tests:
 * Select the **Analyze** -> **Show Coverage Data** menu.
-* In the dialog that appears, click the **+** in the upper left corner to `Add (Insert)`, and browse to `target/jacoco-it.exec`.
+* In the dialog that appears, click the **+** in the upper left corner to `Add (Insert)`, and browse to `target/jacoco.exec`.
 * Selecting that file will show coverage data inline with the code editor.
