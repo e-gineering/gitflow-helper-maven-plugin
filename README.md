@@ -357,14 +357,26 @@ it's building. The attach-deploy will 'clean' the maven project, then download t
 that the first build deployed into. Once they're attached to the project, the `jboss-as:deploy-only` goal will deliver
 the artifacts built by the first job into a jboss application server.
 
-# Resolving the Git branch name
-As stated before, the plugin determines what to do by resolving the Git branch name.
+# Additional Notes
+## How Git branch name resolution works
+1. If the `<scm>` sections of the pom points to a git repository,  `git symbolic-ref HEAD` to is used to check the local branch name.
+2. If the `symbolic-ref` fails then it's likely due to a detached HEAD.
+   This is typical of CI servers like Jenkins, where the commit hash that was just pushed is pulled.
+   This can also be done as a consequene of attempting to rebuild from a tag, without branching, or in some 
+   workflows where code reviews are done without branches.   
+   
+   In the case of a detached HEAD the plugin will:
+    * Resolve the HEAD to a commit using `git rev-parse HEAD`.
+    * `git show-ref` to resolve which (local/remote) branches point to the commit.
+    * If the detached HEAD commit resolves to a single branch type, it uses that branch name.
+3. If the first two methods fail, the plugin attempts to resolve `${env.GIT_BRANCH}`.
 
- * The first try is a `git symbolic-ref HEAD` to check the local branch name. If it's found, that's the branch name that's used.
- * If the `symbolic-ref` fails then it's probably due to a detached HEAD. This typically happens on Jenkins, when it simply checks out the commit hash that was just pushed.
-   Or, it's because of a developer doing a `git checkout origin/feature/x`, e.g. when doing a code review and no local branch is required.
-   In such a case:
-    * The plugin will first resolve the HEAD to a commit using `git rev-parse HEAD`.
-    * Next, it will do a `git show-ref` to check which (local/remote) branches point to the commit.
-    * If it can resolve the commit to a single branch type (e.g. develop or master) then that's the branch name that's used.
- * If all of the above fails, `${env.GIT_BRANCH}` is tried.
+## Building with IntelliJ IDEA notes
+### To Debug Integration Tests:
+Configure the Maven commandline to include
+`-DforkMode=never`
+
+### To inspect code-coverage results from Integration Tests:
+* Select the **Analyze** -> **Show Coverage Data** menu.
+* In the dialog that appears, click the **+** in the upper left corner to `Add (Insert)`, and browse to `target/jacoco-it.exec`.
+* Selecting that file will show coverage data inline with the code editor.

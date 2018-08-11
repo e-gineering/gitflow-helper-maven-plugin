@@ -42,7 +42,7 @@ public class DevelopBranchIT extends AbstractIntegrationTest {
 	 *
 	 * @throws Exception
 	 */
-	public void testAttachExistingArtifacts() throws Exception {
+	public void ttachExistingArtifacts() throws Exception {
 		// If it didn't pass...
 		try {
 			Assume.assumeTrue(deployPassed);

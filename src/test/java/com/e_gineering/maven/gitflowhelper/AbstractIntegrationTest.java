@@ -44,7 +44,7 @@ public abstract class AbstractIntegrationTest extends TestCase {
 
 	private Verifier createVerifier(String basedir, String settings, String gitBranch, String gitflowProjectVersion, boolean debug) throws VerificationException {
 		Verifier verifier = new Verifier(basedir, debug);
-
+		verifier.setLogFileName(getClass().getSimpleName() + "_" + getName() + "-log.txt");
 		verifier.setAutoclean(false);
 
 		if (System.getProperty("argLine", "").length() > 0) {
