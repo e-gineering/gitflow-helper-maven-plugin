@@ -1,42 +1,23 @@
 package com.e_gineering.maven.gitflowhelper;
 
 
-import junit.framework.TestCase;
 import org.apache.maven.it.VerificationException;
 import org.apache.maven.it.Verifier;
 import org.apache.maven.it.util.ResourceExtractor;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.concurrent.TimeUnit;
 
-public abstract class AbstractIntegrationTest extends TestCase {
+public abstract class AbstractIntegrationTest {
+
 	private static PrintStream out = System.out;
 	private static PrintStream err = System.err;
 
-
-	/**
-	 * The zero-based column index where to print the test result.
-	 */
-	private static final int RESULT_COLUMN = 60;
-
-	@Override
-	protected void runTest() throws Throwable {
-		String testMethod = getClass().getSimpleName() + "." + getName();
-		out.print(testMethod);
-		out.print(pad(RESULT_COLUMN - testMethod.length()));
-
-		String status = "";
-		long start = System.nanoTime();
-		try {
-			super.runTest();
-		} finally {
-			long end = System.nanoTime();
-			status += TimeUnit.MILLISECONDS.convert((end - start), TimeUnit.NANOSECONDS) + "ms";
-			out.println(status);
-		}
-	}
+	@Rule
+	public TestName name = new TestName();
 
 	protected Verifier createVerifier(String projectPath, String gitBranch, String projectVersion) throws IOException, VerificationException {
 		return createVerifier(ResourceExtractor.simpleExtractResources(getClass(), projectPath).getAbsolutePath(), null, gitBranch, projectVersion, false);
@@ -44,7 +25,7 @@ public abstract class AbstractIntegrationTest extends TestCase {
 
 	private Verifier createVerifier(String basedir, String settings, String gitBranch, String gitflowProjectVersion, boolean debug) throws VerificationException {
 		Verifier verifier = new Verifier(basedir, debug);
-		verifier.setLogFileName(getClass().getSimpleName() + "_" + getName() + "-log.txt");
+		verifier.setLogFileName(getClass().getSimpleName() + "_" + name.getMethodName() + "-log.txt");
 		verifier.setAutoclean(true);
 
 		if (System.getProperty("argLine", "").length() > 0) {
@@ -95,14 +76,5 @@ public abstract class AbstractIntegrationTest extends TestCase {
 		verifier.getSystemProperties().put("maven.compiler.target", "1.7");
 
 		return verifier;
-	}
-
-
-	private String pad(int chars) {
-		StringBuilder buffer = new StringBuilder(128);
-		for (int i = 0; i < chars; i++) {
-			buffer.append('.');
-		}
-		return buffer.toString();
 	}
 }

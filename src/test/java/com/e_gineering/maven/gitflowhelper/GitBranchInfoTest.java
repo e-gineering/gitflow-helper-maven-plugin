@@ -9,7 +9,7 @@ public class GitBranchInfoTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testInitNoNameParams() {
-		GitBranchInfo gbi = new GitBranchInfo(null, GitBranchType.MASTER, null);
+		new GitBranchInfo(null, GitBranchType.MASTER, null);
 	}
 
 	@Test(expected = IllegalArgumentException.class)

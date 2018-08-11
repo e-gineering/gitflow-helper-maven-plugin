@@ -1,28 +1,35 @@
 package com.e_gineering.maven.gitflowhelper;
 
+import org.apache.maven.it.VerificationException;
 import org.apache.maven.it.Verifier;
-import org.junit.Assume;
-import org.junit.internal.AssumptionViolatedException;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.BlockJUnit4ClassRunner;
 
+@RunWith(BlockJUnit4ClassRunner.class)
 public class DevelopBranchIT extends AbstractIntegrationTest {
 	/**
 	 * Non-snapshot versions on the develop branch should fail.
 	 */
-	public void testNonSnapshotDeployFails() throws Exception {
+	@Test(expected = VerificationException.class)
+	public void nonSnapshotDeployFails() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/develop", "1.0.0");
 		try {
 			verifier.executeGoal("deploy");
 		} catch (Exception ex) {
 			verifier.verifyTextInLog("The current git branch: [origin/develop] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [1.0.0]");
+			throw ex;
+		} finally {
+			verifier.resetStreams();
 		}
-		verifier.resetStreams();
 	}
 
 	/**.
 	 * Snapshot versions on the develop branch should pass
 	 * @throws Exception
 	 */
-	public void testSnapshotDeploySuccess() throws Exception {
+	@Test
+	public void snapshotDeploySuccess() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/develop", "1.0.0-SNAPSHOT");
 
 		verifier.executeGoal("deploy");
@@ -37,7 +44,8 @@ public class DevelopBranchIT extends AbstractIntegrationTest {
 	 *
 	 * @throws Exception
 	 */
-	public void testAttachExistingArtifacts() throws Exception {
+	@Test
+	public void attachExistingArtifacts() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/develop", "1.0.0-SNAPSHOT");
 
 		verifier.executeGoal("deploy");
