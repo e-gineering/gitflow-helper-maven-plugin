@@ -79,18 +79,6 @@ public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
     private File developmentBranchPropertyFile;
 
     /**
-     * Properties to be applied if executing against the development branch
-     */
-    @Parameter(property = "featureOrBugfixBranchProperties")
-    private Properties featureOrBugfixBranchProperties;
-
-    /**
-     * A Property file to load if executing against the feature or bugfix branch
-     */
-    @Parameter(property = "featureOrBugfixBranchPropertyFile")
-    private File featureOrBugfixBranchPropertyFile;
-
-    /**
      * Properties to be applied if executing against a non-releasable branch
      */
     @Parameter(property = "otherBranchProperties")
@@ -161,11 +149,6 @@ public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
             case DEVELOPMENT: {
                 toInject = developmentBranchProperties;
                 toLoad = developmentBranchPropertyFile;
-                break;
-            }
-            case FEATURE_OR_BUGFIX_BRANCH: {
-                toInject = featureOrBugfixBranchProperties;
-                toLoad = featureOrBugfixBranchPropertyFile;
                 break;
             }
             case OTHER: {

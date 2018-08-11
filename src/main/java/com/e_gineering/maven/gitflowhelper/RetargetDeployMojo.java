@@ -43,16 +43,6 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 project.setReleaseArtifactRepository(null);
                 break;
             }
-            case FEATURE_OR_BUGFIX_BRANCH: {
-                if (deploySnapshotTypeBranches) {
-                    getLog().info("Setting snapshot artifact repository to: [" + snapshotDeploymentRepository + "]");
-                    project.setSnapshotArtifactRepository(getDeploymentRepository(snapshotDeploymentRepository));
-                    project.setReleaseArtifactRepository(null);
-                } else {
-                    unsetRepos();
-                }
-                break;
-            }
             default: {
                 unsetRepos();
                 break;

@@ -1,6 +1,5 @@
 package com.e_gineering.maven.gitflowhelper;
 
-import com.e_gineering.maven.gitflowhelper.properties.ExpansionBuffer;
 import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -42,18 +41,16 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
     @Parameter(defaultValue = "(origin/)?develop", property = "developmentBranchPattern", required = true)
     private String developmentBranchPattern;
 
-    @Parameter(defaultValue = "(origin/)?(?:feature|bugfix)/(.*)", property = "featureOrBugfixBranchPattern", required = true)
-    private String featureOrBugfixBranchPattern;
-
     // An expression that resolves to the git branch at run-time.
     // @Parameter tag causes property resolution to fail for patterns containing ${env.}.
     // The default value _must_ be provided programmaticially at run-time.
     @Parameter(property = "gitBranchExpression", required = false)
     private String gitBranchExpression;
 
-    @Parameter(defaultValue = "false", property = "deploySnapshotTypeBranches")
-    boolean deploySnapshotTypeBranches;
-
+    /**
+     * If this is "equals" then exact version matching to branch name matching is preformed.
+     * Otherwise, this is treated as a "startsWith".
+     */
     @Parameter(defaultValue = "equals", property = "releaseBranchMatchType", required = true)
     String releaseBranchMatchType;
 
@@ -88,7 +85,7 @@ public abstract class AbstractGitflowBranchMojo extends AbstractMojo {
         // Validate the match type.
         checkReleaseBranchMatchTypeParam();
 
-        ScmUtils scmUtils = new ScmUtils(systemEnvVars, scmManager, project, getLog(), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern, featureOrBugfixBranchPattern);
+        ScmUtils scmUtils = new ScmUtils(systemEnvVars, scmManager, project, getLog(), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern);
         GitBranchInfo branchInfo = scmUtils.resolveBranchInfo(gitBranchExpression);
 
         getLog().debug("Building for: " + branchInfo);
