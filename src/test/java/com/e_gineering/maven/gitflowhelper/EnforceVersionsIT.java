@@ -67,6 +67,30 @@ public class EnforceVersionsIT extends AbstractIntegrationTest {
 	}
 
 	@Test
+	public void featureAllowsSnapshot() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/feature/aFeatureBranch", "1.0.0-SNAPSHOT");
+
+		try {
+			verifier.executeGoal("gitflow-helper:enforce-versions");
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test
+	public void featureAllowsNonSnapshot() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/feature/aFeatureBranch", "1.0.0");
+
+		try {
+			verifier.executeGoal("gitflow-helper:enforce-versions");
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test
 	public void dependencySuccesses() throws Exception {
 		// Stage the repository with version 1.0.0 of the stub.
 

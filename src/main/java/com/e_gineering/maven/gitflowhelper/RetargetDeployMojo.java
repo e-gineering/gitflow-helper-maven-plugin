@@ -25,12 +25,7 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 project.setReleaseArtifactRepository(getDeploymentRepository(releaseDeploymentRepository));
                 break;
             }
-            case RELEASE: {
-                getLog().info("Setting release artifact repository to: [" + stageDeploymentRepository + "]");
-                project.setSnapshotArtifactRepository(null);
-                project.setReleaseArtifactRepository(getDeploymentRepository(stageDeploymentRepository));
-                break;
-            }
+            case RELEASE:
             case HOTFIX: {
                 getLog().info("Setting release artifact repository to: [" + stageDeploymentRepository + "]");
                 project.setSnapshotArtifactRepository(null);
