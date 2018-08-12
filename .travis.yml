@@ -16,5 +16,5 @@ notifications:
      - eg.oss@e-gineering.com
 
 after_success:
-  - mvn jacoco:report -pl impl
+  - mvn jacoco:report
   - mvn -N coveralls:report
