@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.e-gineering</groupId>
-	<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
+	<artifactId>gitflow-helper-maven-plugin-test-stub-alt</artifactId>
 	<version>${stub.project.version}</version>
 
 	<packaging>jar</packaging>
@@ -29,8 +29,21 @@
 		</repository>
 	</repositories>
 
+	<dependencies>
+		<dependency>
+			<groupId>com.e-gineering</groupId>
+			<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
+			<version>${dependency.stub.version}</version>
+		</dependency>
+	</dependencies>
+
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>com.e-gineering</groupId>
+				<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
+				<version>${plugin.stub.version}</version>
+			</plugin>
 			<plugin>
 				<groupId>com.e-gineering</groupId>
 				<artifactId>gitflow-helper-maven-plugin</artifactId>
@@ -48,20 +61,11 @@
 							<goal>retarget-deploy</goal>
 							<goal>update-stage-dependencies</goal>
 							<goal>set-properties</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>promote-master</id>
-						<goals>
 							<goal>promote-master</goal>
 						</goals>
-						<configuration>
-							<masterBranchPattern>(origin/)?master</masterBranchPattern>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
 		</plugins>
 	</build>
-
 </project>

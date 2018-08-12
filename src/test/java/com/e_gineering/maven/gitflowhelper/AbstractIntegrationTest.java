@@ -23,7 +23,7 @@ public abstract class AbstractIntegrationTest {
 		return createVerifier(ResourceExtractor.simpleExtractResources(getClass(), projectPath).getAbsolutePath(), null, gitBranch, projectVersion, false);
 	}
 
-	private Verifier createVerifier(String basedir, String settings, String gitBranch, String gitflowProjectVersion, boolean debug) throws VerificationException {
+	private Verifier createVerifier(String basedir, String settings, String gitBranch, String stubProjectVersion, boolean debug) throws VerificationException {
 		Verifier verifier = new Verifier(basedir, debug);
 		verifier.setLogFileName(getClass().getSimpleName() + "_" + name.getMethodName() + "-log.txt");
 		verifier.setAutoclean(true);
@@ -36,7 +36,9 @@ public abstract class AbstractIntegrationTest {
 			opts += System.getProperty("argLine", "");
 			verifier.setEnvironmentVariable("MAVEN_OPTS", opts);
 		}
-		verifier.getCliOptions().add("-Dgitflow.project.version=" + gitflowProjectVersion);
+		// Always allow our plugin to use snapshot versions when building / testing ourselves.
+		verifier.getCliOptions().add("-DallowGitflowPluginSnapshot=true");
+		verifier.getCliOptions().add("-Dstub.project.version=" + stubProjectVersion);
 		verifier.getEnvironmentVariables().put("GIT_BRANCH", gitBranch);
 
 		if (settings != null) {

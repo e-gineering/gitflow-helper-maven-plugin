@@ -25,6 +25,9 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
     @Parameter(defaultValue = "true", property = "enforceNonSnapshots", required = true)
     private boolean enforceNonSnapshots;
 
+    @Parameter(defaultValue = "false", property = "allowGitflowPluginSnapshot", required = true)
+    private boolean allowGitflowPluginSnapshot;
+
     @Override
     protected void execute(final GitBranchInfo branchInfo) throws MojoExecutionException, MojoFailureException {
         if (branchInfo.isVersioned()) {
@@ -112,6 +115,10 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
         Set<String> snapshotPluginDeps = new HashSet<>();
         for (Artifact plugin : project.getPluginArtifacts()) {
             if (plugin.isSnapshot()) {
+                if (allowGitflowPluginSnapshot && plugin.getGroupId().equals("com.e-gineering") && plugin.getArtifactId().equals("gitflow-helper-maven-plugin")) {
+                    getLog().warn("SNAPSHOT com.e-gineering:gitflow-helper-maven-plugin detected. Allowing for this build.");
+                    continue;
+                }
                 getLog().debug("SNAPSHOT plugin dependency found: " + plugin.toString());
                 snapshotPluginDeps.add(plugin.toString());
             }

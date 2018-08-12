@@ -53,6 +53,7 @@
         <maven.compiler.target>1.7</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <it.repository.basedir>${project.build.directory}/it-repositories</it.repository.basedir>
+        <version.gitflow.plugin>${project.version}</version.gitflow.plugin>
     </properties>
 
     <distributionManagement>

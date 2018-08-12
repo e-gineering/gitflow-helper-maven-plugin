@@ -16,8 +16,6 @@ public class MasterSupportBranchIT extends AbstractIntegrationTest {
 	public void releaseVersionSuccess() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
 
-		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
 		verifier.executeGoal("gitflow-helper:enforce-versions");
 
 		verifier.verifyErrorFreeLog();
@@ -61,21 +59,13 @@ public class MasterSupportBranchIT extends AbstractIntegrationTest {
 		// Create a release version and get it deployed.
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
 
-		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
-
 		verifier.executeGoal("deploy");
 
 		verifier.verifyErrorFreeLog();
-
 		verifier.resetStreams();
 
 		// Promote (deploy) from /origin/master
 		verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
-
-		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
-
 
 		verifier.executeGoal("deploy");
 
@@ -101,21 +91,13 @@ public class MasterSupportBranchIT extends AbstractIntegrationTest {
 		// Create a release version and get it deployed.
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.1.0", "1.1.0");
 
-		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
-
 		verifier.executeGoal("deploy");
 
 		verifier.verifyErrorFreeLog();
-
 		verifier.resetStreams();
 
 		// Promote (deploy) from /origin/master
 		verifier = createVerifier("/project-stub", "origin/master", "1.1.0");
-
-		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
-
 
 		verifier.executeGoals(Arrays.asList("jar:jar", "deploy"));
 		try {

@@ -18,8 +18,6 @@ public class ReleaseBranchIT extends AbstractIntegrationTest {
 	public void snapshotDeployFails() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0-SNAPSHOT");
 
-		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
 		try {
 			verifier.executeGoal("deploy");
 		} catch (Exception ex) {
@@ -38,9 +36,6 @@ public class ReleaseBranchIT extends AbstractIntegrationTest {
 	public void deploySuccess() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
 
-		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
-
 		verifier.executeGoal("deploy");
 
 		verifier.verifyErrorFreeLog();
@@ -56,9 +51,6 @@ public class ReleaseBranchIT extends AbstractIntegrationTest {
 	@Test
 	public void attachExistingArtifacts() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
-
-		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
 
 		verifier.executeGoal("deploy");
 
