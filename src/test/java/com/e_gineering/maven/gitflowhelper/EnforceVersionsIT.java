@@ -9,6 +9,63 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 @RunWith(BlockJUnit4ClassRunner.class)
 public class EnforceVersionsIT extends AbstractIntegrationTest {
 
+	@Test(expected = VerificationException.class)
+	public void versionEqualsMismatch() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.2.0");
+
+		try {
+			verifier.executeGoal("gitflow-helper:enforce-versions");
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test(expected = VerificationException.class)
+	public void versionStartswithMismatch() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/release/1.2", "1.3.0");
+		verifier.getCliOptions().add("-DreleaseBranchMatchType=startsWith");
+
+		try {
+			verifier.executeGoal("gitflow-helper:enforce-versions");
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test
+	public void versionStartswithMatch() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/release/1.2", "1.2.4");
+		verifier.getCliOptions().add("-DreleaseBranchMatchType=startsWith");
+
+		try {
+			verifier.executeGoal("gitflow-helper:enforce-versions");
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test
+	public void supportsStartswithMatch() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/support/1.2", "1.2.4");
+
+		try {
+			verifier.executeGoal("gitflow-helper:enforce-versions");
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test(expected = VerificationException.class)
+	public void supportsStartswithMismatch() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/support/1.2", "1.3.2");
+
+		try {
+			verifier.executeGoal("gitflow-helper:enforce-versions");
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
 	@Test
 	public void dependencySuccesses() throws Exception {
 		// Stage the repository with version 1.0.0 of the stub.
