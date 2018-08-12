@@ -14,3 +14,7 @@ notifications:
   email:
     recipients:
      - eg.oss@e-gineering.com
+
+after_success:
+  - mvn jacoco:report -pl impl
+  - mvn -N coveralls:report
