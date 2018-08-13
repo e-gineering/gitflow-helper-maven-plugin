@@ -53,6 +53,10 @@
 					<releaseDeploymentRepository>releases</releaseDeploymentRepository>
 					<stageDeploymentRepository>test-releases</stageDeploymentRepository>
 					<snapshotDeploymentRepository>snapshots</snapshotDeploymentRepository>
+					<releaseBranchProperties>
+						<foo>bar</foo>
+					</releaseBranchProperties>
+					<scope>system</scope>
 				</configuration>
 				<executions>
 					<execution>

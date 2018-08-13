@@ -51,6 +51,24 @@
 					<stageDeploymentRepository>test-releases::default::file:${it.repository.basedir}/test-releases::false</stageDeploymentRepository>
 					<snapshotDeploymentRepository>snapshots</snapshotDeploymentRepository>
 					<masterBranchPropertyFile>src/build/resources/master.build.properties</masterBranchPropertyFile>
+					<supportBranchProperties>
+						<build.branch.type>support</build.branch.type>
+					</supportBranchProperties>
+					<releaseBranchProperties>
+						<build.branch.type>release</build.branch.type>
+					</releaseBranchProperties>
+					<hotfixBranchProperties>
+						<build.branch.type>hotfix</build.branch.type>
+					</hotfixBranchProperties>
+					<developmentBranchProperties>
+						<build.branch.type>develop</build.branch.type>
+					</developmentBranchProperties>
+					<otherBranchProperties>
+						<build.branch.type>other</build.branch.type>
+					</otherBranchProperties>
+					<undefinedBranchProperties>
+						<build.branch.type>undefined</build.branch.type>
+					</undefinedBranchProperties>
 				</configuration>
 				<executions>
 					<execution>
