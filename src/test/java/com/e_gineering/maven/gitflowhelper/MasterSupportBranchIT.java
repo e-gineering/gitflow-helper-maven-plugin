@@ -81,7 +81,7 @@ public class MasterSupportBranchIT extends AbstractIntegrationTest {
 
 		verifier.verifyTextInLog("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [origin/master] matches masterBranchPattern");
 		verifier.verifyTextInLog("[INFO] Setting release artifact repository to: [releases]");
-		verifier.verifyTextInLog("[INFO] Resolving & Reattaching existing artifacts from stageDeploymentRepository [test-releases]");
+		verifier.verifyTextInLog("[INFO] Resolving & Reattaching existing artifacts from stageDeploymentRepository [test-releases");
 		verifier.verifyErrorFreeLog();
 		verifier.resetStreams();
 	}
@@ -113,7 +113,7 @@ public class MasterSupportBranchIT extends AbstractIntegrationTest {
 		verifier.verifyTextInLog("Building jar:"); // This should still be there.
 		verifier.verifyTextInLog("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [origin/master] matches masterBranchPattern");
 		verifier.verifyTextInLog("[INFO] Setting release artifact repository to: [releases]");
-		verifier.verifyTextInLog("[INFO] Resolving & Reattaching existing artifacts from stageDeploymentRepository [test-releases]");
+		verifier.verifyTextInLog("[INFO] Resolving & Reattaching existing artifacts from stageDeploymentRepository [test-releases");
 		verifier.verifyErrorFreeLog();
 		verifier.resetStreams();
 	}

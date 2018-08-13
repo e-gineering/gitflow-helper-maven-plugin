@@ -1,4 +1,4 @@
-# gitflow-helper-maven-plugin [![Build Status](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin.svg?branch=master)](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin)
+# gitflow-helper-maven-plugin [![Build Status](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin.svg?branch=master)](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin) [![Coverage Status](https://coveralls.io/repos/github/egineering-llc/gitflow-helper-maven-plugin/badge.svg)](https://coveralls.io/github/egineering-llc/gitflow-helper-maven-plugin)
 
 A build extension and plugin that helps Maven play nicely with gitflow projects, CI servers and local development.
 
