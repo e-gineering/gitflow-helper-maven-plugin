@@ -89,6 +89,7 @@ public class RetargetDeployIT extends AbstractIntegrationTest {
 
 		// Promote with the support branch
 		verifier = createVerifier("/project-stub", "origin/master", "3.3.0");
+		verifier.setMavenDebug(true);
 		verifier.executeGoal("deploy");
 
 		verifier.verifyErrorFreeLog();
