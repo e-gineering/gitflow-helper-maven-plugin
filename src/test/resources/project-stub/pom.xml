@@ -30,6 +30,16 @@
 	</repositories>
 
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+				<includes>
+					<include>*.properties</include>
+				</includes>
+			</resource>
+		</resources>
+
 		<plugins>
 			<plugin>
 				<groupId>com.e-gineering</groupId>
@@ -40,6 +50,7 @@
 					<releaseDeploymentRepository>releases</releaseDeploymentRepository>
 					<stageDeploymentRepository>test-releases::default::file:${it.repository.basedir}/test-releases::false</stageDeploymentRepository>
 					<snapshotDeploymentRepository>snapshots</snapshotDeploymentRepository>
+					<masterBranchPropertyFile>src/build/resources/master.build.properties</masterBranchPropertyFile>
 				</configuration>
 				<executions>
 					<execution>
