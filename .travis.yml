@@ -3,8 +3,7 @@ language: java
 script: mvn verify
 
 jdk:
- - openjdk7
- - oraclejdk8
+ - openjdk8
 
 cache:
   directories:
@@ -16,5 +15,4 @@ notifications:
      - eg.oss@e-gineering.com
 
 after_success:
-  - mvn jacoco:report
-  - mvn -N coveralls:report
+  - mvn jacoco:report coveralls:report
