@@ -9,58 +9,53 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 public class OtherBranchIT extends AbstractIntegrationTest {
 	@Test
 	public void featureSnapshotSemVer() throws Exception {
-		Verifier verifier = createVerifier("/project-stub", "origin/feature/my-feature-branch", "5.0.0-SNAPSHOT");
-		try {
-			verifier.getCliOptions().add("-Dgitflow.force.other.deploy=semver");
-			verifier.executeGoal("deploy");
+		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/my-feature-branch", "5.0.0-SNAPSHOT");
+		verifier.executeGoal("deploy");
 
-			verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-my-feature-branch");
-			verifier.verifyErrorFreeLog();
-		} finally {
-			verifier.resetStreams();
-		}
-	}
-
-	@Test
-	public void featureSnapshotOverwrite() throws Exception {
-		Verifier verifier = createVerifier("/project-stub", "origin/feature/my-feature-branch", "5.0.0-SNAPSHOT");
-		try {
-			verifier.getCliOptions().add("-Dgitflow.force.other.deploy=overwrite");
-			verifier.executeGoal("deploy");
-
-			verifier.verifyTextInLog("DANGER! DANGER, WILL ROBINSON!");
-			verifier.verifyErrorFreeLog();
-		} finally {
-			verifier.resetStreams();
-		}
+		verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-poc-my-feature-branch-SNAPSHOT");
+		verifier.verifyErrorFreeLog();
+		verifier.resetStreams();
 	}
 
 	@Test
 	public void featureSemVer() throws Exception {
-		Verifier verifier = createVerifier("/project-stub", "origin/feature/my-feature-branch.with.other.identifiers", "5.0.1");
-		try {
-			verifier.getCliOptions().add("-Dgitflow.force.other.deploy=semver");
-			verifier.executeGoal("deploy");
+		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/my-feature-branch.with.other.identifiers", "5.0.1");
+		verifier.executeGoal("deploy");
 
-			verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-my-feature-branch.with.other.identifiers");
-			verifier.verifyErrorFreeLog();
-		} finally {
-			verifier.resetStreams();
-		}
+		verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-poc-my-feature-branch.with.other.identifiers-SNAPSHOT");
+		verifier.verifyErrorFreeLog();
+		verifier.resetStreams();
 	}
 
 	@Test
-	public void featureOverwrite() throws Exception {
-		Verifier verifier = createVerifier("/project-stub", "origin/feature/my-feature-branch", "5.0.1");
-		try {
-			verifier.getCliOptions().add("-Dgitflow.force.other.deploy=overwrite");
-			verifier.executeGoal("deploy");
+	public void noOtherDeployMatch() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/feature/my-feature-branch", "5.0.1-SNAPSHOT");
+		verifier.executeGoal("deploy");
 
-			verifier.verifyTextInLog("DANGER! DANGER, WILL ROBINSON!");
-			verifier.verifyErrorFreeLog();
-		} finally {
-			verifier.resetStreams();
-		}
+		verifier.verifyTextInLog("Un-Setting artifact repositories.");
+		verifier.verifyErrorFreeLog();
+		verifier.resetStreams();
 	}
 
+	@Test
+	public void automagicVersionDependenciesResolve() throws Exception {
+		// Create a -SNAPSHOT of the project-stub.
+		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/long-running", "2.0.0");
+
+		verifier.executeGoal("deploy");
+
+		verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-poc-long-running-SNAPSHOT");
+		verifier.verifyErrorFreeLog();
+		verifier.resetStreams();
+
+		// Create a -SNAPSHOT of the project-alt1-stub that depends upon the other project's automagic version.
+		verifier = createVerifier("/project-alt1-stub", "origin/feature/poc/long-running", "2.0.0");
+
+		verifier.getCliOptions().add("-Ddependency.stub.version=2.0.0+origin-feature-poc-long-running-SNAPSHOT");
+		verifier.getCliOptions().add("-Dplugin.stub.version=2.0.0+origin-feature-poc-long-running-SNAPSHOT");
+
+		verifier.executeGoal("deploy");
+		verifier.verifyErrorFreeLog();
+		verifier.resetStreams();
+	}
 }

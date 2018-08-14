@@ -15,7 +15,7 @@ import java.util.Properties;
 /**
  * Set a project property value based upon the current ${env.GIT_BRANCH} resolution.
  */
-@Mojo(name = "set-properties", defaultPhase = LifecyclePhase.INITIALIZE, threadSafe = true)
+@Mojo(name = "set-properties", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
 
     /**

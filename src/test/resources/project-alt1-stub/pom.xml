@@ -56,15 +56,15 @@
 					<releaseBranchProperties>
 						<foo>bar</foo>
 					</releaseBranchProperties>
-					<scope>system</scope>
+					<otherDeployBranchPattern>(origin/)feature/poc/.*</otherDeployBranchPattern>
 				</configuration>
 				<executions>
 					<execution>
 						<goals>
 							<goal>enforce-versions</goal>
+							<goal>set-properties</goal>
 							<goal>retarget-deploy</goal>
 							<goal>update-stage-dependencies</goal>
-							<goal>set-properties</goal>
 							<goal>promote-master</goal>
 						</goals>
 					</execution>

@@ -35,37 +35,24 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 break;
             }
             case OTHER: {
+                // If other branches are set to deploy
                 // Other branches never target release, but may target stage for non-SNAPSHOT artifacts.
                 // For this reason, "overwrite" is considered _highly_ dangerous.
-                if (!"false".equalsIgnoreCase(forceOtherDeploy)) {
-                    // Setup the target based on the base project version.
-                    if (ArtifactUtils.isSnapshot(project.getVersion())) {
-                        setTargetSnapshots();
-                    } else {
-                        setTargetStage();
+                getLog().debug("Resolving: " + otherDeployBranchPattern);
+                String otherBranchesToDeploy = resolveExpression(otherDeployBranchPattern);
+                getLog().debug("Resolved to: " + otherBranchesToDeploy);
+	            if (!"".equals(otherBranchesToDeploy) && gitBranchInfo.getName().matches(otherBranchesToDeploy)) {
+                    setTargetSnapshots();
+
+                    String branchName = gitBranchInfo.getName();
+                    String semVerAddition = "+" + branchName.replaceAll("[^0-9^A-Z^a-z^-^.]", "-") + "-SNAPSHOT";
+
+                    updateArtifactVersion(project.getArtifact(), semVerAddition);
+                    for (Artifact a : project.getAttachedArtifacts()) {
+                        updateArtifactVersion(a, semVerAddition);
                     }
 
-                    // Monkey with things to do our semVer magic.
-                    if ("semVer".equalsIgnoreCase(forceOtherDeploy)) {
-                    	if (ArtifactUtils.isSnapshot(project.getVersion())) {
-                    		getLog().warn("Maven -SNAPSHOT builds break semVer standards, in that -SNAPSHOT must be the _last_ poriton of a maven version. In semVer, the pre-release status is supposed to come before the build meta-data.");
-                    		getLog().info("The gitflow-helper-maven-plugin will inject the build metadata preceding the -SNAPSHOT, allowing for snapshot deployments of this branch.");
-	                    }
-                        String branchName = gitBranchInfo.getName();
-                        String semVerAddition = "+" + branchName.replaceAll("[^0-9^A-Z^a-z^-^.]", "-");
-
-                        updateArtifactVersion(project.getArtifact(), semVerAddition);
-                        for (Artifact a : project.getAttachedArtifacts()) {
-                        	updateArtifactVersion(a, semVerAddition);
-                        }
-
-                        getLog().info("Artifact versions updated with semVer build metadata: " + semVerAddition);
-                    }
-                    if ("overwrite".equalsIgnoreCase(forceOtherDeploy)) {
-                        getLog().warn("DANGER! DANGER, WILL ROBINSON!");
-                        getLog().warn("Deployment of this build will OVERWRITE Deployment of " + project.getVersion() + " in the targeted repository.");
-                        getLog().warn("THIS IS NOT RECOMMENDED.");
-                    }
+                    getLog().info("Artifact versions updated with semVer build metadata: " + semVerAddition);
                     break;
                 }
             }
@@ -77,20 +64,12 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
     }
 
     private void updateArtifactVersion(final Artifact a, final String semVerAdditon) {
-    	String baseVersion = a.getBaseVersion();
-    	String version = a.getVersion();
-
-		String semBaseVersion = baseVersion + semVerAdditon;
-		String semVersion = version + semVerAdditon;
-
-		if (semBaseVersion.contains("-SNAPSHOT")) {
-			semBaseVersion = semBaseVersion.replace("-SNAPSHOT", "") + "-SNAPSHOT";
-		}
-		if (semVersion.contains("-SNAPSHOT")) {
-			semVersion = semVersion.replace("-SNAPSHOT", "") + "-SNAPSHOT";
-		}
-		a.setBaseVersion(semBaseVersion);
-		a.setVersion(semVersion);
+        // Handle null-safety. In some cases Projects don't have primary artifacts.
+        if (a != null) {
+            // If the version contains -SNAPSHOT, replace it with ""
+            a.setVersion(a.getVersion().replace("-SNAPSHOT", "") + semVerAdditon);
+            a.setBaseVersion(a.getBaseVersion().replace("-SNAPSHOT", "") + semVerAdditon);
+        }
     }
 
 
