@@ -84,6 +84,9 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     @Parameter(defaultValue = "${repositorySystemSession}", required = true)
     RepositorySystemSession session;
 
+    @Parameter(property = "gitflow.force.other.deploy", defaultValue = "false", required = true)
+    String forceOtherDeploy;
+
     @Component
     private EnhancedLocalRepositoryManagerFactory localRepositoryManagerFactory;
 

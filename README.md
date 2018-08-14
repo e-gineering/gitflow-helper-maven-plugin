@@ -371,8 +371,22 @@ the artifacts built by the first job into a jboss application server.
     * If the detached HEAD commit resolves to a single branch type, it uses that branch name.
 3. If the first two methods fail, the plugin attempts to resolve `${env.GIT_BRANCH}`.
 
+## To Debug the plugin (replicating a test-case but without being run from jUnit)
+You can 'bootstrap' the plugin into your local repository and get the test project stubbed by running:
+`mvn -Dmaven.test.skip=true install` 
+
+Then, change directories:
+`cd target/test-classes/project-stub`
+
+From there, you'll need to supply the required environment variables or commandline arguments to `mvnDebug`:
+```
+export GIT_BRANCH=origin/feature/mybranch-foo-bar
+mvnDebug -Dstub.project.version=5.0.0-SNAPSHOT -DotherBranchDeploy=semver -DallowGitflowPluginSnapshot=true  deploy
+```
+You can then connect a remote debugger and step through the plugin code.
+
 ## Building with IntelliJ IDEA notes
-### To Debug Tests:
+### To Debug Test Code:
 Configure the Maven commandline to include
 `-DforkMode=never` You will likely get warnings when you run maven with this argument.
 

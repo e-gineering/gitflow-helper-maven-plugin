@@ -34,6 +34,9 @@ public class AttachDeployedArtifactsMojo extends AbstractGitflowBasedRepositoryM
                 attachExistingArtifacts(snapshotDeploymentRepository, true);
                 break;
             }
+            case OTHER: {
+
+            }
             default: {
                 getLog().info("Attaching Artifacts from local repository...");
                 // Use the 'local' repository to do this.
