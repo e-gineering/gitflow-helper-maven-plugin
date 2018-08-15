@@ -38,22 +38,6 @@ public class MasterSupportBranchIT extends AbstractIntegrationTest {
 		}
 	}
 
-	@Test(expected = VerificationException.class)
-	public void snapshotPluginFailure() throws Exception {
-		if (System.getProperty("project.version", "").endsWith("-SNAPSHOT")) {
-			Verifier verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
-
-			try {
-				verifier.executeGoal("gitflow-helper:enforce-versions");
-			} finally {
-				verifier.verifyTextInLog("GitBranchInfo:");
-				verifier.verifyTextInLog("The maven project has the following SNAPSHOT plugin dependencies:");
-
-				verifier.resetStreams();
-			}
-		}
-	}
-
 	@Test
 	public void promotionOfRelease() throws Exception {
 		// Create a release version and get it deployed.
