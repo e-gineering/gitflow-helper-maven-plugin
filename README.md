@@ -203,7 +203,7 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 | releaseDeploymentRepository | n/a | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern` or `supportBranchPattern`) |
 | stageDeploymentRepository | n/a | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern`) | 
 | snapshotDeploymentRepository | n/a | The repository to use for snapshots. (Builds matching `developmentBranchPattern`) |
-| otherDeploymentBranchPattern | false | N/A | Regex. When matched, the branch name is normalized and any artifacts produced by the build will include the normalized branch name and -SNAPSHOT. Deployment will target the snapshot repository|
+| otherDeploymentBranchPattern | n/a | Regex. When matched, the branch name is normalized and any artifacts produced by the build will include the normalized branch name and -SNAPSHOT. Deployment will target the snapshot repository |
 
 **The repository properties should follow the following format**, `id::layout::url::uniqueVersion`.
 
