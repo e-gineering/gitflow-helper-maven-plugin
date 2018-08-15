@@ -400,7 +400,7 @@ You can then connect a remote debugger and step through the plugin code.
 ## Building with IntelliJ IDEA notes
 ### To Debug Test Code:
 Configure the Maven commandline to include
-`-DforkMode=never` You will likely get warnings when you run maven with this argument.
+`-DforkMode=never` You will likely get warnings when you run maven without this argument.
 
 ### To inspect code-coverage results from Integration Tests:
 * Select the **Analyze** -> **Show Coverage Data** menu.

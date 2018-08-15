@@ -15,10 +15,13 @@ public class RetargetDeployIT extends AbstractIntegrationTest {
 	public void devTargetsSnapshot() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/develop", "3.0.0-SNAPSHOT");
 
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Ensure the file exists in the repo.
 		File artifactDir = new File(System.getProperty("basedir"), "target/it-repositories/snapshots/com/e-gineering/gitflow-helper-maven-plugin-test-stub/3.0.0-SNAPSHOT");
@@ -29,10 +32,13 @@ public class RetargetDeployIT extends AbstractIntegrationTest {
 	public void releaseTargetsTest() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/release/3.1.0", "3.1.0");
 
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Ensure the file exists in the repo.
 		File artifactDir = new File(System.getProperty("basedir"), "target/it-repositories/test-releases/com/e-gineering/gitflow-helper-maven-plugin-test-stub/3.1.0");
@@ -43,10 +49,13 @@ public class RetargetDeployIT extends AbstractIntegrationTest {
 	public void hotfixTargetsTest() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/hotfix/3.1.5", "3.1.5");
 
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Ensure the file exists in the repo.
 		File artifactDir = new File(System.getProperty("basedir"), "target/it-repositories/test-releases/com/e-gineering/gitflow-helper-maven-plugin-test-stub/3.1.5");
@@ -57,19 +66,25 @@ public class RetargetDeployIT extends AbstractIntegrationTest {
 	public void supportTargetsReleases() throws Exception {
 		// Deploy a hotfix to the test-releases.
 		Verifier verifier = createVerifier("/project-stub", "origin/hotfix/3.2.1", "3.2.1");
-		verifier.executeGoal("deploy");
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+		try {
+			verifier.executeGoal("deploy");
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		File artifactDir = new File(System.getProperty("basedir"), "target/it-repositories/test-releases/com/e-gineering/gitflow-helper-maven-plugin-test-stub/3.2.1");
 		Assert.assertTrue(artifactDir.exists() && artifactDir.isDirectory() && artifactDir.list().length > 0);
 
 		// Promote with the support branch
 		verifier = createVerifier("/project-stub", "origin/support/3.2", "3.2.1");
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Ensure the file exists in the repo.
 		artifactDir = new File(System.getProperty("basedir"), "target/it-repositories/releases/com/e-gineering/gitflow-helper-maven-plugin-test-stub/3.2.1");
@@ -80,20 +95,26 @@ public class RetargetDeployIT extends AbstractIntegrationTest {
 	public void masterTargetsReleases() throws Exception {
 		// Deploy a hotfix to the test-releases.
 		Verifier verifier = createVerifier("/project-stub", "origin/release/3.3.0", "3.3.0");
-		verifier.executeGoal("deploy");
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+		try {
+			verifier.executeGoal("deploy");
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		File artifactDir = new File(System.getProperty("basedir"), "target/it-repositories/test-releases/com/e-gineering/gitflow-helper-maven-plugin-test-stub/3.3.0");
 		Assert.assertTrue(artifactDir.exists() && artifactDir.isDirectory() && artifactDir.list().length > 0);
 
 		// Promote with the support branch
 		verifier = createVerifier("/project-stub", "origin/master", "3.3.0");
-		verifier.setMavenDebug(true);
-		verifier.executeGoal("deploy");
+		try {
+			verifier.setMavenDebug(true);
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Ensure the file exists in the repo.
 		artifactDir = new File(System.getProperty("basedir"), "target/it-repositories/releases/com/e-gineering/gitflow-helper-maven-plugin-test-stub/3.3.0");
