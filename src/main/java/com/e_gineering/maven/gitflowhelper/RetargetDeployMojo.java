@@ -38,9 +38,7 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 // If other branches are set to deploy
                 // Other branches never target release, but may target stage for non-SNAPSHOT artifacts.
                 // For this reason, "overwrite" is considered _highly_ dangerous.
-                getLog().debug("Resolving: " + otherDeployBranchPattern);
                 String otherBranchesToDeploy = resolveExpression(otherDeployBranchPattern);
-                getLog().debug("Resolved to: " + otherBranchesToDeploy);
 	            if (!"".equals(otherBranchesToDeploy) && gitBranchInfo.getName().matches(otherBranchesToDeploy)) {
                     setTargetSnapshots();
 
