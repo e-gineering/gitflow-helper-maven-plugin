@@ -1,4 +1,4 @@
-# gitflow-helper-maven-plugin [![Build Status](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin.svg?branch=master)](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin)
+# gitflow-helper-maven-plugin [![Build Status](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin.svg?branch=master)](https://travis-ci.org/egineering-llc/gitflow-helper-maven-plugin) [![Coverage Status](https://coveralls.io/repos/github/egineering-llc/gitflow-helper-maven-plugin/badge.svg)](https://coveralls.io/github/egineering-llc/gitflow-helper-maven-plugin)
 
 A build extension and plugin that helps Maven play nicely with gitflow projects, CI servers and local development.
 
@@ -124,7 +124,6 @@ All of the solutions to these issues are implemented independently in different 
                             <hotfixBranchPropertyFile>foo/bar/emer.props</hotfixBranchPropertyFile>
                             <releaseBranchPropertyFile>foo/bar/test.props</releaseBranchPropertyFile>
                             <developmentBranchPropertyFile>foo/bar/dev.props</developmentBranchPropertyFile>
-                            <featureOrBugfixBranchPropertyFile>foo/bar/feat.props</featureOrBugfixBranchPropertyFile>
                             <otherBranchPropertyFile>foo/bar/ci.props</otherBranchPropertyFile>
                             <undefinedBranchPropertyFile>foo/bar/local.props</undefinedBranchPropertyFile>
                         </configuration>
@@ -144,9 +143,9 @@ One common stumbling block for teams adjusting to gitflow with Maven projects is
 In practice, the Maven versions should:
  
  * Be synchronized with release branch and hotfix branch names.
- * Never be -SNAPSHOT in the master, support, release, or hotfix branches. Also, no -SNAPSHOT parent or (plugin) dependencies are allowed. (This condition may be disabled by setting `enforceNonSnapshots` = `false`.)
- * Always be -SNAPSHOT in the feature and develop branches.
- * Be irrelevant if there's no git branch resolvable from your environment.
+ * Never be -SNAPSHOT in the master, support, release, or hotfix branches. Also, no -SNAPSHOT parent or (plugin) dependencies are allowed.
+ * Always be -SNAPSHOT in the develop branch.
+ * Be irrelevant if there's no git branch resolvable from your environment or working in a branch which is not deployed to remote repositories.
 
 The `enforce-versions` goal asserts these semantics when it can resolve the `gitBranchExpression`.
 
@@ -166,7 +165,6 @@ The following properties change the behavior of this goal:
 | supportBranchPattern | (origin/)?support/(.*) | No | Regex. When matches, signals a support branch (long term master-equivalent for older release) being built. Last subgroup, if present, must be start of the Maven project version. |
 | releaseBranchPattern | (origin/)?release/(.*) | No | Regex. When matched, signals a release branch being built. Last subgroup, if present, must match the Maven project version. |
 | hotfixBranchPattern  | (origin/)?hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Last subgroup, if present, must match the Maven project version. |
-| featureOrBugfixBranchPattern | (origin/)?(?:feature&#124;bugfix)/(.*) | Yes | Regex. When matched, signals a feature or bugfix branch is being built. |
 | developmentBranchPattern | (origin/)?develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
 
 
@@ -185,7 +183,6 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 | Property | Default Value | Description | 
 | -------- | ------------- | ----------- |
 | gitBranchExpression  | current git branch resolved from SCM or ${env.GIT_BRANCH} | Maven property expression to resolve in order to determine the current git branch |
-| deploySnapshotTypeBranches  | `false` | When `true`, feature branches will also be deployed to the snapshots repository. |
 | releaseDeploymentRepository | n/a | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern` or `supportBranchPattern`) |
 | stageDeploymentRepository | n/a | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern`) | 
 | snapshotDeploymentRepository | n/a | The repository to use for snapshots. (Builds matching `developmentBranchPattern`) |
@@ -339,7 +336,6 @@ The following table describes the git branch expression -> repository used for r
 | supportBranchPattern  | release    |
 | releaseBranchPattern  | stage      |
 | hotfixBranchPattern   | stage      |
-| featureOrBugfixBranchPattern | snapshots | 
 | developmentBranchPattern | snapshots | 
 | All Others            | local      |
  
@@ -361,15 +357,26 @@ it's building. The attach-deploy will 'clean' the maven project, then download t
 that the first build deployed into. Once they're attached to the project, the `jboss-as:deploy-only` goal will deliver
 the artifacts built by the first job into a jboss application server.
 
+# Additional Notes
+## How Git branch name resolution works
+1. If the `<scm>` sections of the pom points to a git repository,  `git symbolic-ref HEAD` to is used to check the local branch name.
+2. If the `symbolic-ref` fails then it's likely due to a detached HEAD.
+   This is typical of CI servers like Jenkins, where the commit hash that was just pushed is pulled.
+   This can also be done as a consequene of attempting to rebuild from a tag, without branching, or in some 
+   workflows where code reviews are done without branches.   
+   
+   In the case of a detached HEAD the plugin will:
+    * Resolve the HEAD to a commit using `git rev-parse HEAD`.
+    * `git show-ref` to resolve which (local/remote) branches point to the commit.
+    * If the detached HEAD commit resolves to a single branch type, it uses that branch name.
+3. If the first two methods fail, the plugin attempts to resolve `${env.GIT_BRANCH}`.
 
-# Resolving the Git branch name
-As stated before, the plugin determines what to do by resolving the Git branch name.
+## Building with IntelliJ IDEA notes
+### To Debug Tests:
+Configure the Maven commandline to include
+`-DforkMode=never` You will likely get warnings when you run maven without this argument.
 
- * The first try is a `git symbolic-ref HEAD` to check the local branch name. If it's found, that's the branch name that's used.
- * If the `symbolic-ref` fails then it's probably due to a detached HEAD. This typically happens on Jenkins, when it simply checks out the commit hash that was just pushed.
-   Or, it's because of a developer doing a `git checkout origin/feature/x`, e.g. when doing a code review and no local branch is required.
-   In such a case:
-    * The plugin will first resolve the HEAD to a commit using `git rev-parse HEAD`.
-    * Next, it will do a `git show-ref` to check which (local/remote) branches point to the commit.
-    * If it can resolve the commit to a single branch type (e.g. develop or master) then that's the branch name that's used.
- * If all of the above fails, `${env.GIT_BRANCH}` is tried.
+### To inspect code-coverage results from Integration Tests:
+* Select the **Analyze** -> **Show Coverage Data** menu.
+* In the dialog that appears, click the **+** in the upper left corner to `Add (Insert)`, and browse to `target/jacoco.exec`.
+* Selecting that file will show coverage data in the code editor.

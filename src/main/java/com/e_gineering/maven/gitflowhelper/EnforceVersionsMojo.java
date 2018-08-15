@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 /**
  * If there is an ${env.GIT_BRANCH} property, assert that the current ${project.version} is semantically correct for the
- * git branch. Also, make sure there are no SNAPSHOT (plugin) dependencies.
+ * git branch. Also, make sure there are no SNAPSHOT (plugin) dependencies if enforceNonSnapshots = true.
  */
 @Mojo(requiresDependencyCollection = ResolutionScope.TEST, name = "enforce-versions", defaultPhase = LifecyclePhase.VALIDATE)
 public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
@@ -25,46 +25,42 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
     @Parameter(defaultValue = "true", property = "enforceNonSnapshots", required = true)
     private boolean enforceNonSnapshots;
 
+    @Parameter(defaultValue = "false", property = "allowGitflowPluginSnapshot", required = true)
+    private boolean allowGitflowPluginSnapshot;
+
     @Override
     protected void execute(final GitBranchInfo branchInfo) throws MojoExecutionException, MojoFailureException {
-        if (GitBranchType.VERSIONED_TYPES.contains(branchInfo.getType())) {
+        if (branchInfo.isVersioned()) {
             getLog().debug("Versioned Branch: " + branchInfo);
             Matcher gitMatcher = Pattern.compile(branchInfo.getPattern()).matcher(branchInfo.getName());
 
             // We're in a versioned branch, we expect a non-SNAPSHOT version in the POM.
             if (gitMatcher.matches()) {
-                if (enforceNonSnapshots) {
-                    checkForSnapshots(branchInfo);
+                // Always assert that pom versions match our expectations.
+                if (hasSnapshotInModel(project)) {
+                    throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is defined as a release branch. The maven project or one of its parents is currently a snapshot version.");
                 }
 
                 // Non-master version branches require a pom version match of some kind to the branch subgroups.
                 if (gitMatcher.groupCount() > 0 && gitMatcher.group(gitMatcher.groupCount()) != null) {
                     checkReleaseTypeBranchVersion(branchInfo, gitMatcher);
                 }
-            }
-        } else if (GitBranchType.SNAPSHOT_TYPES.contains(branchInfo.getType()) && !ArtifactUtils.isSnapshot(project.getVersion())) {
-            throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
-        } else if (GitBranchType.FEATURE_OR_BUGFIX_BRANCH.equals(branchInfo.getType()) && deploySnapshotTypeBranches) {
-            checkFeatureOrBugfixBranchVersion(branchInfo);
-        }
-    }
 
-    private void checkFeatureOrBugfixBranchVersion(final GitBranchInfo branchInfo) throws MojoFailureException {
-        // For FEATURE and BUGFIX branches, check if the POM version includes the branch name
-        Matcher gitMatcher = Pattern.compile(branchInfo.getPattern()).matcher(branchInfo.getName());
-        if (gitMatcher.matches()) {
-            String branchName = gitMatcher.group(gitMatcher.groupCount());
-            String v = project.getVersion();
-            String branchNameSnapshot = branchName + "-" + Artifact.SNAPSHOT_VERSION;
-            if (v.length() < branchNameSnapshot.length() || !v.regionMatches(
-                    true,
-                    v.length() - branchNameSnapshot.length(),
-                    branchNameSnapshot,
-                    0,
-                    branchNameSnapshot.length())
-                    ) {
-                throw new MojoFailureException("The project's version should end with [" + branchNameSnapshot + "]");
+                // Optionally (default true) reinforce that no dependencies may be snapshots.
+                if (enforceNonSnapshots) {
+                    Set<String> snapshotDeps = getSnapshotDeps();
+                    if (!snapshotDeps.isEmpty()) {
+                        throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT dependencies: " + snapshotDeps.toString());
+                    }
+
+                    Set<String> snapshotPluginDeps = getSnapshotPluginDeps();
+                    if (!snapshotPluginDeps.isEmpty()) {
+                        throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT plugin dependencies: " + snapshotPluginDeps.toString());
+                    }
+                }
             }
+        } else if (branchInfo.isSnapshot() && !ArtifactUtils.isSnapshot(project.getVersion())) {
+            throw new MojoFailureException("The current git branch: [" + branchInfo.getName() + "] is detected as a SNAPSHOT-type branch, and expects a maven project version ending with -SNAPSHOT. The maven project version found was: [" + project.getVersion() + "]");
         }
     }
 
@@ -94,22 +90,6 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
         }
     }
 
-    private void checkForSnapshots(final GitBranchInfo gitBranchInfo) throws MojoFailureException {
-        if (hasSnapshotInModel(project)) {
-            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project or one of its parents is currently a snapshot version.");
-        }
-
-        Set<String> snapshotDeps = getSnapshotDeps();
-        if (!snapshotDeps.isEmpty()) {
-            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT dependencies: " + snapshotDeps.toString());
-        }
-
-        Set<String> snapshotPluginDeps = getSnapshotPluginDeps();
-        if (!snapshotPluginDeps.isEmpty()) {
-            throw new MojoFailureException("The current git branch: [" + gitBranchInfo.getName() + "] is defined as a release branch. The maven project has the following SNAPSHOT plugin dependencies: " + snapshotPluginDeps.toString());
-        }
-    }
-
     private boolean hasSnapshotInModel(final MavenProject project) {
         MavenProject parent = project.getParent();
 
@@ -135,6 +115,10 @@ public class EnforceVersionsMojo extends AbstractGitflowBranchMojo {
         Set<String> snapshotPluginDeps = new HashSet<>();
         for (Artifact plugin : project.getPluginArtifacts()) {
             if (plugin.isSnapshot()) {
+                if (allowGitflowPluginSnapshot && plugin.getGroupId().equals("com.e-gineering") && plugin.getArtifactId().equals("gitflow-helper-maven-plugin")) {
+                    getLog().warn("SNAPSHOT com.e-gineering:gitflow-helper-maven-plugin detected. Allowing for this build.");
+                    continue;
+                }
                 getLog().debug("SNAPSHOT plugin dependency found: " + plugin.toString());
                 snapshotPluginDeps.add(plugin.toString());
             }

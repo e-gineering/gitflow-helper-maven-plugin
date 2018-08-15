@@ -25,12 +25,7 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 project.setReleaseArtifactRepository(getDeploymentRepository(releaseDeploymentRepository));
                 break;
             }
-            case RELEASE: {
-                getLog().info("Setting release artifact repository to: [" + stageDeploymentRepository + "]");
-                project.setSnapshotArtifactRepository(null);
-                project.setReleaseArtifactRepository(getDeploymentRepository(stageDeploymentRepository));
-                break;
-            }
+            case RELEASE:
             case HOTFIX: {
                 getLog().info("Setting release artifact repository to: [" + stageDeploymentRepository + "]");
                 project.setSnapshotArtifactRepository(null);
@@ -41,16 +36,6 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 getLog().info("Setting snapshot artifact repository to: [" + snapshotDeploymentRepository + "]");
                 project.setSnapshotArtifactRepository(getDeploymentRepository(snapshotDeploymentRepository));
                 project.setReleaseArtifactRepository(null);
-                break;
-            }
-            case FEATURE_OR_BUGFIX_BRANCH: {
-                if (deploySnapshotTypeBranches) {
-                    getLog().info("Setting snapshot artifact repository to: [" + snapshotDeploymentRepository + "]");
-                    project.setSnapshotArtifactRepository(getDeploymentRepository(snapshotDeploymentRepository));
-                    project.setReleaseArtifactRepository(null);
-                } else {
-                    unsetRepos();
-                }
                 break;
             }
             default: {
