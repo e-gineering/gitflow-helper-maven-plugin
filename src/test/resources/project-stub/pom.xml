@@ -69,7 +69,7 @@
 					<undefinedBranchProperties>
 						<build.branch.type>undefined</build.branch.type>
 					</undefinedBranchProperties>
-					<otherDeployBranchPattern>(origin/)feature/poc/.*</otherDeployBranchPattern>
+					<otherDeployBranchPattern>(origin/)?feature/poc/.*</otherDeployBranchPattern>
 				</configuration>
 				<executions>
 					<execution>
