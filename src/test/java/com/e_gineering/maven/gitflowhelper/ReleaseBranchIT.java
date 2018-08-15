@@ -36,11 +36,13 @@ public class ReleaseBranchIT extends AbstractIntegrationTest {
 	public void deploySuccess() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
 
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 	}
 
 	/**
@@ -52,19 +54,25 @@ public class ReleaseBranchIT extends AbstractIntegrationTest {
 	public void attachExistingArtifacts() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
 
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Now re-attach in another verifier.
 		verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
 
-		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
-		verifier.executeGoal("gitflow-helper:attach-deployed");
+		try {
+			// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
+			verifier.getCliOptions().add("-DenforceNonSnapshots=false");
+			verifier.executeGoal("gitflow-helper:attach-deployed");
 
-		verifier.verifyErrorFreeLog();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 	}
 }

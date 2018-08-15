@@ -32,11 +32,13 @@ public class DevelopBranchIT extends AbstractIntegrationTest {
 	public void snapshotDeploySuccess() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/develop", "1.0.0-SNAPSHOT");
 
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 	}
 
 	/**
@@ -48,18 +50,24 @@ public class DevelopBranchIT extends AbstractIntegrationTest {
 	public void attachExistingArtifacts() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/develop", "1.0.0-SNAPSHOT");
 
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 
 		// New verifier to attach existing artifacts
 		verifier = createVerifier("/project-stub", "origin/develop", "1.0.0-SNAPSHOT");
 
-		verifier.executeGoal("gitflow-helper:attach-deployed");
+		try {
+			verifier.executeGoal("gitflow-helper:attach-deployed");
 
-		verifier.verifyErrorFreeLog();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 	}
 }

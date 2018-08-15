@@ -374,7 +374,7 @@ the artifacts built by the first job into a jboss application server.
 ## Building with IntelliJ IDEA notes
 ### To Debug Tests:
 Configure the Maven commandline to include
-`-DforkMode=never` You will likely get warnings when you run maven with this argument.
+`-DforkMode=never` You will likely get warnings when you run maven without this argument.
 
 ### To inspect code-coverage results from Integration Tests:
 * Select the **Analyze** -> **Show Coverage Data** menu.

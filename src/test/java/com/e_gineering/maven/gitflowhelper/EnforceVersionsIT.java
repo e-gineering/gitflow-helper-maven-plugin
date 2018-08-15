@@ -97,39 +97,53 @@ public class EnforceVersionsIT extends AbstractIntegrationTest {
 		// Create a release version and get it deployed.
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
 
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Promote (deploy) from /origin/master
 		verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Build a project that depends upon the upstream project.
 		verifier = createVerifier("/project-alt1-stub", "origin/release/1.0.0", "1.0.0");
 		verifier.getCliOptions().add("-Ddependency.stub.version=1.0.0");
 		verifier.getCliOptions().add("-Dplugin.stub.version=1.0.0");
 
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		verifier = createVerifier("/project-alt1-stub", "origin/master", "1.0.0");
-		verifier.getCliOptions().add("-Ddependency.stub.version=1.0.0");
-		verifier.getCliOptions().add("-Dplugin.stub.version=1.0.0");
+		try {
+			verifier.getCliOptions().add("-Ddependency.stub.version=1.0.0");
+			verifier.getCliOptions().add("-Dplugin.stub.version=1.0.0");
 
-		verifier.executeGoal("deploy");
+			verifier.executeGoal("deploy");
 
-		verifier.verifyTextInLog("gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [origin/master] matches masterBranchPattern");
-		verifier.verifyTextInLog("[INFO] Setting release artifact repository to: [releases]");
-		verifier.verifyTextInLog("[INFO] Resolving & Reattaching existing artifacts from stageDeploymentRepository [test-releases]");
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyTextInLog(
+				"gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [origin/master] matches masterBranchPattern");
+			verifier.verifyTextInLog("[INFO] Setting release artifact repository to: [releases]");
+			verifier.verifyTextInLog(
+				"[INFO] Resolving & Reattaching existing artifacts from stageDeploymentRepository [test-releases]");
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 	}
 
 	@Test(expected= VerificationException.class)
@@ -138,18 +152,23 @@ public class EnforceVersionsIT extends AbstractIntegrationTest {
 
 		// Create a release version and get it deployed.
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.executeGoal("deploy");
-
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Promote (deploy) from /origin/master
 		verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Build a project that depends upon the upstream project.
 		verifier = createVerifier("/project-alt1-stub", "origin/release/1.0.0", "1.0.0");
@@ -169,18 +188,23 @@ public class EnforceVersionsIT extends AbstractIntegrationTest {
 
 		// Create a release version and get it deployed.
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.executeGoal("deploy");
-
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Promote (deploy) from /origin/master
 		verifier = createVerifier("/project-stub", "origin/master", "1.0.0");
-		verifier.executeGoal("deploy");
+		try {
+			verifier.executeGoal("deploy");
 
-		verifier.verifyErrorFreeLog();
-		verifier.resetStreams();
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
 
 		// Build a project that depends upon the upstream project.
 		verifier = createVerifier("/project-alt1-stub", "origin/release/1.0.0", "1.0.0");
