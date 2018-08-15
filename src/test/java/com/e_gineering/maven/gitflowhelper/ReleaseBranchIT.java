@@ -14,7 +14,7 @@ public class ReleaseBranchIT extends AbstractIntegrationTest {
 	/**
 	 * Non-snapshot versions on the develop branch should fail.
 	 */
-	@Test(expected = VerificationException.class)
+	@Test
 	public void snapshotDeployFails() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0-SNAPSHOT");
 
@@ -22,7 +22,6 @@ public class ReleaseBranchIT extends AbstractIntegrationTest {
 			verifier.executeGoal("deploy");
 		} catch (Exception ex) {
 			verifier.verifyTextInLog("The current git branch: [origin/release/1.0.0] is defined as a release branch. The maven project or one of its parents is currently a snapshot version.");
-			throw ex;
 		} finally {
 			verifier.resetStreams();
 		}
@@ -36,13 +35,11 @@ public class ReleaseBranchIT extends AbstractIntegrationTest {
 	public void deploySuccess() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
 
-		try {
-			verifier.executeGoal("deploy");
+		verifier.executeGoal("deploy");
 
-			verifier.verifyErrorFreeLog();
-		} finally {
-			verifier.resetStreams();
-		}
+		verifier.verifyErrorFreeLog();
+
+		verifier.resetStreams();
 	}
 
 	/**
@@ -54,25 +51,19 @@ public class ReleaseBranchIT extends AbstractIntegrationTest {
 	public void attachExistingArtifacts() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
 
-		try {
-			verifier.executeGoal("deploy");
+		verifier.executeGoal("deploy");
 
-			verifier.verifyErrorFreeLog();
-		} finally {
-			verifier.resetStreams();
-		}
+		verifier.verifyErrorFreeLog();
+
+		verifier.resetStreams();
 
 		// Now re-attach in another verifier.
 		verifier = createVerifier("/project-stub", "origin/release/1.0.0", "1.0.0");
 
-		try {
-			// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
-			verifier.getCliOptions().add("-DenforceNonSnapshots=false");
-			verifier.executeGoal("gitflow-helper:attach-deployed");
+		// Allow -SNAPSHOT builds of the plugin to succeed while still asserting the version match.
+		verifier.getCliOptions().add("-DenforceNonSnapshots=false");
+		verifier.executeGoal("gitflow-helper:attach-deployed");
 
-			verifier.verifyErrorFreeLog();
-		} finally {
-			verifier.resetStreams();
-		}
+		verifier.verifyErrorFreeLog();
 	}
 }
