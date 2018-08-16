@@ -10,6 +10,7 @@ It does so by:
     * SCM tagging builds for master and support branches. You can use the project SCM definition, or if you omit it, you can resolve the CI server's repository connection information. (Zero Maven scm configuration necessary)
     * Promoting existing tested (staged) artifacts for release, rather than re-building the artifacts. Eliminates the risk of accidental master merges or commits resulting in untested code being released, and provides digest hash traceability for the history of artifacts.
     * Enabling the decoupling of repository deployment and execution environment delivery based on the current git branch.
+    * Allowing for long-running non-release branches to be deployed to snapshots, automatically reversioning the artifacts based off the branch name.
  * Automated deployment, promotion, and delivery of projects without the [maven-release-plugin](http://maven.apache.org/maven-release/maven-release-plugin/) or some other [*almost there* solution](https://axelfontaine.com/blog/final-nail.html).
  * Customizing maven project and system properties based upon the current branch being built. This allows test cases to target different execution environments without changing the artifact results.
  * Enabling automatic purging and resolving (force update) of 'release' and 'hotfix' release versioned dependencies resolved from the 'stage' repository.
@@ -24,6 +25,7 @@ This plugin solves a few specific issues common in consolidated Hudson/Jenkins C
  4. Set arbitrary project properties based upon the type of GIT branch being built. 
  5. Reliably tag deploy builds from the master and support branches
  6. Enable split 'deploy' vs. 'deliver' maven CI job configuration, without rebuilding artifacts for the 'deliver' phase.
+ 7. Allow for deployment of long-running feature branches to repositories without having to mangle the version in the pom.xml.
  
 In addition to supporting these goals for the project, this plugin does it in a manner that tries to be as effortless (yet configurable) as possible.
 If you use non-standard gitflow branch names (emer instead of hotfix), this plugin supports that. If you don't want to do version enforcement, this plugin supports that. 
@@ -107,14 +109,16 @@ All of the solutions to these issues are implemented independently in different 
                     <releaseDeploymentRepository>localnexus-releases</releaseDeploymentRepository>
                     <stageDeploymentRepository>localnexus-stage</stageDeploymentRepository>
                     <snapshotDeploymentRepository>localnexus-snapshots</snapshotDeploymentRepository>
+                    <!-- Allow branches starting with feature/poc to be published as automagically versioned branch-name-SNAPSHOT artifacts -->
+                    <otherDeploymentBranchPattern>(origin/)feature/poc/.*</otherDeploymentBranchPattern>
                 </configuration>
                 <executions>
                     <execution>
                         <goals>
                             <goal>enforce-versions</goal>
+                            <goal>set-properties</goal>
                             <goal>retarget-deploy</goal>
                             <goal>update-stage-dependencies</goal>
-                            <goal>set-properties</goal>
                             <goal>tag-master</goal>
                             <goal>promote-master</goal>
                         </goals>
@@ -167,6 +171,19 @@ The following properties change the behavior of this goal:
 | hotfixBranchPattern  | (origin/)?hotfix/(.*) | No | Regex. When matched, signals a hotfix branch is being built. Last subgroup, if present, must match the Maven project version. |
 | developmentBranchPattern | (origin/)?develop | Yes | Regex. When matched, signals a development branch is being built. Note the lack of a subgroup. |
 
+## Goal: `set-properties` (Dynamically Set Maven Project / System Properties)
+
+Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
+based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
+a build, or needing to setup / configure datasources for automated tests to run against.
+
+The `set-properties` goal allows for setting project (or system) properties, dynamically based on the detected git
+branch being built. Properties can be specified as a Properties collection in plugin configuration, or can be loaded
+from a property file during the build. Both property key names and property values will have placeholders resolved.
+
+Multiple executions can be configured, and each execution can target different scopes (system or project), and can load
+properties from files with an assigned keyPrefix, letting you name-space properties from execution ids.
+
 
 ## Goal: `retarget-deploy` (Branch Specific Deploy Targets & Staging)
 
@@ -186,7 +203,7 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 | releaseDeploymentRepository | n/a | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern` or `supportBranchPattern`) |
 | stageDeploymentRepository | n/a | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern`) | 
 | snapshotDeploymentRepository | n/a | The repository to use for snapshots. (Builds matching `developmentBranchPattern`) |
-
+| otherDeploymentBranchPattern | n/a | Regex. When matched, the branch name is normalized and any artifacts produced by the build will include the normalized branch name and -SNAPSHOT. Deployment will target the snapshot repository |
 
 **The repository properties should follow the following format**, `id::layout::url::uniqueVersion`.
 
@@ -235,20 +252,15 @@ Can be replaced with the following plugin configuration, which also introduces t
         ...
     </build>
 
+### Deploying non-release (OTHER) type branches as -SNAPSHOT releases.
 
-## Goal: `set-properties` (Dynamically Set Maven Project / System Properties)
-
-Some situations with automated testing (and integration testing in particular) demand changing configuration properties 
-based upon the branch type being built. This is a common necessity when configuring automated DB refactorings as part of
-a build, or needing to setup / configure datasources for automated tests to run against.
-
-The `set-properties` goal allows for setting project (or system) properties, dynamically based on the detected git
-branch being built. Properties can be specified as a Properties collection in plugin configuration, or can be loaded
-from a property file during the build. Both property key names and property values will have placeholders resolved.
-
-Multiple executions can be configured, and each execution can target different scopes (system or project), and can load
-properties from files with an assigned keyPrefix, letting you name-space properties from execution ids.
-
+In addition to setting up repository targets for release branches, the `retarget-depoy` branch can deploy other branches
+matching the `otherDeploymentBranchPattern` as -SNAPSHOT artifacts which include the branch name as build metadata.
+This is loosely based on the [semVer](https://semver.org) semantic version scheme, in that the plugin will reversion any
+artifacts to be produced with `+feature-branch-name-normalized-SNAPSHOT` where any characters not in `[0-9A-Za-z-.]` will
+be replaced with `-`. Artifact versions for feature branches will _always_ be -SNAPSHOT, and will _always_ target the 
+Snapshots repository. The intent for this configuration setting is to provide a way for long-running branches (matching 
+a naming convention you define) can be published to a SNAPSHOT repo for use by other projects.
 
 ## Goal: `update-stage-dependencies` (Force update of dependency staged Releases)
 
@@ -337,6 +349,7 @@ The following table describes the git branch expression -> repository used for r
 | releaseBranchPattern  | stage      |
 | hotfixBranchPattern   | stage      |
 | developmentBranchPattern | snapshots | 
+| otherBranchesToDeploy | snapshots | 
 | All Others            | local      |
  
 As an example, assume you have two CI jobs. 
@@ -371,10 +384,24 @@ the artifacts built by the first job into a jboss application server.
     * If the detached HEAD commit resolves to a single branch type, it uses that branch name.
 3. If the first two methods fail, the plugin attempts to resolve `${env.GIT_BRANCH}`.
 
+## To Debug the plugin (replicating a test-case but without being run from jUnit)
+You can 'bootstrap' the plugin into your local repository and get the test project stubbed by running:
+`mvn -Dmaven.test.skip=true install` 
+
+Then, change directories:
+`cd target/test-classes/project-stub`
+
+From there, you'll need to supply the required environment variables or commandline arguments to `mvnDebug`:
+```
+export GIT_BRANCH=origin/feature/mybranch-foo-bar
+mvnDebug -Dstub.project.version=5.0.0-SNAPSHOT -DotherBranchDeploy=semver -DallowGitflowPluginSnapshot=true  deploy
+```
+You can then connect a remote debugger and step through the plugin code.
+
 ## Building with IntelliJ IDEA notes
-### To Debug Tests:
+### To Debug Test Code:
 Configure the Maven commandline to include
-`-DforkMode=never` You will likely get warnings when you run maven without this argument.
+`-DforkMode=never` You will likely get warnings when you run maven with this argument.
 
 ### To inspect code-coverage results from Integration Tests:
 * Select the **Analyze** -> **Show Coverage Data** menu.

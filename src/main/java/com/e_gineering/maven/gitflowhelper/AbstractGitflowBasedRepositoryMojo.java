@@ -84,6 +84,9 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     @Parameter(defaultValue = "${repositorySystemSession}", required = true)
     RepositorySystemSession session;
 
+    @Parameter(property = "otherDeployBranchPattern", required = false)
+    String otherDeployBranchPattern;
+
     @Component
     private EnhancedLocalRepositoryManagerFactory localRepositoryManagerFactory;
 
