@@ -5,6 +5,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
+import java.util.Arrays;
+
 @RunWith(BlockJUnit4ClassRunner.class)
 public class OtherBranchIT extends AbstractIntegrationTest {
 	@Test
@@ -66,6 +68,27 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 			verifier.getCliOptions().add("-Dplugin.stub.version=2.0.0+origin-feature-poc-long-running-SNAPSHOT");
 
 			verifier.executeGoal("deploy");
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test
+	public void attachDeployed() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/reattach", "5.0.0-SNAPSHOT");
+		try {
+			verifier.executeGoal("deploy");
+
+			verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-poc-reattach-SNAPSHOT");
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+
+		verifier = createVerifier("/project-stub", "origin/feature/poc/reattach", "5.0.0-SNAPSHOT");
+		try {
+			verifier.executeGoals(Arrays.asList("validate", "gitflow-helper:attach-deployed"));
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();

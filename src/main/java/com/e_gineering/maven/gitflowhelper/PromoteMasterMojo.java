@@ -1,12 +1,13 @@
 package com.e_gineering.maven.gitflowhelper;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 
 /**
- * If the build is being executed from a FEATURE_OR_BUGFIX, DEVELOPMENT, HOTFIX or RELEASE branch, attach an artifact containing a list of
+ * If the build is being executed from a DEVELOPMENT, HOTFIX or RELEASE branch, attach an artifact containing a list of
  * the attached artifacts. This list is then used for promoting artifacts from the stage repository to the release
  * repository. Or it can be used manually by the attach-deployed goal.
  *
@@ -25,6 +26,14 @@ public class PromoteMasterMojo extends AbstractGitflowBasedRepositoryMojo {
             case RELEASE: {
                 // In order to use promote-master or attach-deployed, we need to build an artifactCatalog on deployable branches.
                 attachArtifactCatalog();
+                break;
+            }
+            // In order to use attach-deployed, we need to build the artifactCatalog.
+            case OTHER: {
+                String otherBranchesToDeploy = resolveExpression(otherDeployBranchPattern);
+                if (!"".equals(otherBranchesToDeploy) && gitBranchInfo.getName().matches(otherBranchesToDeploy)) {
+                    attachArtifactCatalog();
+                }
                 break;
             }
 

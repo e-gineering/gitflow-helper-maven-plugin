@@ -1,7 +1,7 @@
 package com.e_gineering.maven.gitflowhelper;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.ArtifactUtils;
+import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -39,15 +39,15 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
 	            if (!"".equals(otherBranchesToDeploy) && gitBranchInfo.getName().matches(otherBranchesToDeploy)) {
                     setTargetSnapshots();
 
-                    String branchName = gitBranchInfo.getName();
-                    String semVerAddition = "+" + branchName.replaceAll("[^0-9A-Za-z-.]", "-") + "-SNAPSHOT";
+                    project.setVersion(getAsBranchSnapshotVersion(project.getVersion(), gitBranchInfo.getName()));
 
-                    updateArtifactVersion(project.getArtifact(), semVerAddition);
+                    // Update any attached artifacts.
+                    updateArtifactVersion(project.getArtifact(), gitBranchInfo.getName());
                     for (Artifact a : project.getAttachedArtifacts()) {
-                        updateArtifactVersion(a, semVerAddition);
+                        updateArtifactVersion(a, gitBranchInfo.getName());
                     }
 
-                    getLog().info("Artifact versions updated with semVer build metadata: " + semVerAddition);
+                    getLog().info("Artifact versions updated with semVer build metadata: " + getAsBranchSnapshotVersion("", gitBranchInfo.getName()));
                     break;
                 }
             }
@@ -58,15 +58,35 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
         }
     }
 
-    private void updateArtifactVersion(final Artifact a, final String semVerAdditon) {
-        // Handle null-safety. In some cases Projects don't have primary artifacts.
+    /**
+     * Updates artifact versions for a given branch name.
+     * @param a artifact to update (may be null)
+     * @param branchName the branch name
+     */
+    private void updateArtifactVersion(Artifact a, String branchName) {
         if (a != null) {
-            // If the version contains -SNAPSHOT, replace it with ""
-            a.setVersion(a.getVersion().replace("-SNAPSHOT", "") + semVerAdditon);
-            a.setBaseVersion(a.getBaseVersion().replace("-SNAPSHOT", "") + semVerAdditon);
+            a.setVersion(getAsBranchSnapshotVersion(a.getVersion(), branchName));
+            try {
+                a.setVersionRange(VersionRange.createFromVersion(a.getVersion()));
+            } catch (UnsupportedOperationException uoe) { // Some artifact types don't like this.
+                getLog().debug("Unable to update VersionRange for artifact.");
+            }
         }
     }
 
+
+    /**
+     * Given a String version (which may be a final or -SNAPSHOT version) return a
+     * version version string mangled to include a `+normalized-branch-name-SNAPSHOT format version.
+     *
+     * @param version The base version (ie, 1.0.2-SNAPSHOT)
+     * @param branchName to be normalized
+     * @return A mangled version string with the branchname and -SNAPSHOT.
+     */
+    private String getAsBranchSnapshotVersion(final String version, final String branchName) {
+        return version.replace("-SNAPSHOT", "") + "+" + branchName.replaceAll("[^0-9A-Za-z-.]", "-") + "-SNAPSHOT";
+
+    }
 
     private void setTargetSnapshots() throws MojoExecutionException, MojoFailureException {
         getLog().info("Setting snapshot artifact repository to: [" + snapshotDeploymentRepository + "]");
