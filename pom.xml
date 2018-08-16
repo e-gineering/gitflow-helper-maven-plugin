@@ -8,7 +8,7 @@
 
     <groupId>com.e-gineering</groupId>
     <artifactId>gitflow-helper-maven-plugin</artifactId>
-    <version>1.8.0</version>
+    <version>2.0.0</version>
 
     <packaging>maven-plugin</packaging>
 
@@ -52,6 +52,8 @@
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <it.repository.basedir>${project.build.directory}/it-repositories</it.repository.basedir>
+        <version.gitflow.plugin>${project.version}</version.gitflow.plugin>
     </properties>
 
     <distributionManagement>
@@ -115,12 +117,6 @@
             <artifactId>aether-util</artifactId>
             <version>0.9.0.M2</version>
         </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.8.2</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -138,12 +134,6 @@
                         <id>mojo-descriptor</id>
                         <goals>
                             <goal>descriptor</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>help-goal</id>
-                        <goals>
-                            <goal>helpmojo</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -179,6 +169,132 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>testing</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <testResources>
+                    <testResource>
+                        <directory>src/test/java</directory>
+                    </testResource>
+                    <testResource>
+                        <directory>src/test/resources</directory>
+                        <filtering>true</filtering>
+                    </testResource>
+                </testResources>
+                <plugins>
+                    <!-- Jacoco -->
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.1</version>
+                        <executions>
+                            <execution>
+                                <id>default-prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <!-- Jacoco Is configured to munge the results of the normal unit tests
+                                 and integration tests into the same output file.
+                                 This gives us a 'global view' of all tested code paths.
+                             -->
+                            <execution>
+                                <id>pre-integration-test</id>
+                                <goals>
+                                    <goal>prepare-agent-integration</goal>
+                                </goals>
+                                <configuration>
+                                    <destFile>${project.build.directory}/jacoco.exec</destFile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Enable surefire so we do integration testing only -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.22.0</version>
+                        <configuration>
+                            <systemProperties>
+                                <argLine>${argLine}</argLine>
+                            </systemProperties>
+                            <forkCount>1</forkCount>
+                        </configuration>
+                    </plugin>
+
+                    <!-- Enable failsafe for integration testing -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>2.22.0</version>
+                        <executions>
+                            <execution>
+                                <configuration>
+                                    <systemProperties>
+                                        <maven.repo.local>${it.repository.basedir}/local</maven.repo.local>
+                                        <project.version>${project.version}</project.version>
+                                        <argLine>${argLine}</argLine>
+                                    </systemProperties>
+                                    <forkCount>1</forkCount>
+                                </configuration>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Copy the packaged artifact to the local repository used by the integration tests -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-install-plugin</artifactId>
+                        <version>2.5.2</version>
+                        <executions>
+                            <execution>
+                                <configuration>
+                                    <localRepositoryPath>${it.repository.basedir}/local</localRepositoryPath>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <pomFile>${pom.basedir}/pom.xml</pomFile>
+                                    <file>${project.build.directory}${file.separator}${project.build.finalName}.jar</file>
+                                </configuration>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>install-file</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Coveralls Reporting -->
+                    <plugin>
+                        <groupId>org.eluder.coveralls</groupId>
+                        <artifactId>coveralls-maven-plugin</artifactId>
+                        <version>4.3.0</version>
+                    </plugin>
+                </plugins>
+            </build>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.maven.shared</groupId>
+                    <artifactId>maven-verifier</artifactId>
+                    <version>1.6</version>
+                </dependency>
+                <dependency>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                    <version>4.8.2</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
         <profile>
             <id>eg.oss</id>
             <activation>

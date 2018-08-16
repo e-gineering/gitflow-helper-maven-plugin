@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.e-gineering</groupId>
+	<artifactId>gitflow-helper-maven-plugin-test-stub-alt</artifactId>
+	<version>${stub.project.version}</version>
+
+	<packaging>jar</packaging>
+
+	<repositories>
+		<repository>
+			<id>releases</id>
+			<url>file:${it.repository.basedir}/releases</url>
+			<snapshots><enabled>false</enabled></snapshots>
+			<releases><enabled>true</enabled></releases>
+		</repository>
+		<repository>
+			<id>test-releases</id>
+			<url>file:${it.repository.basedir}/test-releases</url>
+			<snapshots><enabled>false</enabled></snapshots>
+			<releases><enabled>true</enabled></releases>
+		</repository>
+		<repository>
+			<id>snapshots</id>
+			<url>file:${it.repository.basedir}/snapshots</url>
+			<snapshots><enabled>true</enabled></snapshots>
+			<releases><enabled>false</enabled></releases>
+		</repository>
+	</repositories>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.e-gineering</groupId>
+			<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
+			<version>${dependency.stub.version}</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>com.e-gineering</groupId>
+				<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
+				<version>${plugin.stub.version}</version>
+			</plugin>
+			<plugin>
+				<groupId>com.e-gineering</groupId>
+				<artifactId>gitflow-helper-maven-plugin</artifactId>
+				<version>${version.gitflow.plugin}</version>
+				<extensions>true</extensions>
+				<configuration>
+					<releaseDeploymentRepository>releases</releaseDeploymentRepository>
+					<stageDeploymentRepository>test-releases</stageDeploymentRepository>
+					<snapshotDeploymentRepository>snapshots</snapshotDeploymentRepository>
+					<releaseBranchProperties>
+						<foo>bar</foo>
+					</releaseBranchProperties>
+					<otherDeployBranchPattern>(origin/)?feature/poc/.*</otherDeployBranchPattern>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>enforce-versions</goal>
+							<goal>set-properties</goal>
+							<goal>retarget-deploy</goal>
+							<goal>update-stage-dependencies</goal>
+							<goal>promote-master</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+</project>

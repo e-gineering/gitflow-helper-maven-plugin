@@ -3,7 +3,6 @@ package com.e_gineering.maven.gitflowhelper;
 import com.e_gineering.maven.gitflowhelper.properties.ExpansionBuffer;
 import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.commons.lang.StringUtils;
-import org.apache.maven.MavenExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.scm.ScmException;
@@ -20,7 +19,6 @@ import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
 import org.codehaus.plexus.util.cli.StreamConsumer;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -45,7 +43,7 @@ class ScmUtils {
 
     public ScmUtils(final Properties systemEnvVars, final ScmManager scmManager, final MavenProject project, final Log log,
                     final String masterBranchPattern, final String supportBranchPattern, final String releaseBranchPattern,
-                    final String hotfixBranchPattern, final String developmentBranchPattern, final String featureOrBugfixBranchPattern)
+                    final String hotfixBranchPattern, final String developmentBranchPattern)
     {
         this.systemEnvVars = systemEnvVars;
         this.scmManager = scmManager;
@@ -199,8 +197,6 @@ class ScmUtils {
             return new GitBranchInfo(branchName, GitBranchType.HOTFIX, hotfixBranchPattern);
         } else if (branchName.matches(developmentBranchPattern)) {
             return new GitBranchInfo(branchName, GitBranchType.DEVELOPMENT, developmentBranchPattern);
-        } else if (branchName.matches(featureOrBugfixBranchPattern)) {
-            return new GitBranchInfo(branchName, GitBranchType.FEATURE_OR_BUGFIX_BRANCH, featureOrBugfixBranchPattern);
         } else {
             return new GitBranchInfo(branchName, GitBranchType.OTHER, null);
         }
