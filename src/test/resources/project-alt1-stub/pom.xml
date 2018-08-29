@@ -57,6 +57,7 @@
 						<foo>bar</foo>
 					</releaseBranchProperties>
 					<otherDeployBranchPattern>(origin/)?feature/poc/.*</otherDeployBranchPattern>
+					<otherBranchVersionDelimiter>-</otherBranchVersionDelimiter>
 				</configuration>
 				<executions>
 					<execution>

@@ -256,11 +256,15 @@ Can be replaced with the following plugin configuration, which also introduces t
 
 In addition to setting up repository targets for release branches, the `retarget-depoy` branch can deploy other branches
 matching the `otherDeploymentBranchPattern` as -SNAPSHOT artifacts which include the branch name as build metadata.
-This is loosely based on the [semVer](https://semver.org) semantic version scheme, in that the plugin will reversion any
-artifacts to be produced with `+feature-branch-name-normalized-SNAPSHOT` where any characters not in `[0-9A-Za-z-.]` will
-be replaced with `-`. Artifact versions for feature branches will _always_ be -SNAPSHOT, and will _always_ target the 
+By default this is loosely based on the [semVer](https://semver.org) semantic version scheme, in that the plugin will 
+reversion any artifacts to be produced with `+feature-branch-name-normalized-SNAPSHOT` where any characters not in 
+`[0-9A-Za-z-.]` will be replaced with `-`. In cases where the `+` delimiter is problematic, you can override that default
+by specifying `<otherBranchVersionDelimiter>` in your configuration block.
+
+Using this feature, artifact versions for feature branches will _always_ be -SNAPSHOT, and will _always_ target the 
 Snapshots repository. The intent for this configuration setting is to provide a way for long-running branches (matching 
-a naming convention you define) can be published to a SNAPSHOT repo for use by other projects.
+a naming convention you define) can be published to a SNAPSHOT repo for use by other projects, and to prevent feature 
+branches forked from release branches from mangling the test release in an artifact repository.
 
 ## Goal: `update-stage-dependencies` (Force update of dependency staged Releases)
 
