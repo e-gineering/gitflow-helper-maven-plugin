@@ -47,7 +47,7 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                         updateArtifactVersion(a, gitBranchInfo.getName());
                     }
 
-                    getLog().info("Artifact versions updated with semVer build metadata: " + getAsBranchSnapshotVersion("", gitBranchInfo.getName()));
+                    getLog().info("Artifact versions updated with build metadata: " + getAsBranchSnapshotVersion("", gitBranchInfo.getName()));
                     break;
                 }
             }
@@ -84,8 +84,7 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
      * @return A mangled version string with the branchname and -SNAPSHOT.
      */
     private String getAsBranchSnapshotVersion(final String version, final String branchName) {
-        return version.replace("-SNAPSHOT", "") + "+" + branchName.replaceAll("[^0-9A-Za-z-.]", "-") + "-SNAPSHOT";
-
+        return version.replace("-SNAPSHOT", "") + otherBranchVersionDelimiter + branchName.replaceAll("[^0-9A-Za-z-.]", "-") + "-SNAPSHOT";
     }
 
     private void setTargetSnapshots() throws MojoExecutionException, MojoFailureException {

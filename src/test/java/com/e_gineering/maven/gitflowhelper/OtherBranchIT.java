@@ -15,7 +15,7 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 		try {
 			verifier.executeGoal("deploy");
 
-			verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-poc-my-feature-branch-SNAPSHOT");
+			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-my-feature-branch-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();
@@ -28,7 +28,7 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 		try {
 			verifier.executeGoal("deploy");
 
-			verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-poc-my-feature-branch.with.other.identifiers-SNAPSHOT");
+			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-my-feature-branch.with.other.identifiers-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();
@@ -55,19 +55,21 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 		try {
 			verifier.executeGoal("deploy");
 
-			verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-poc-long-running-SNAPSHOT");
+			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-long-running-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();
 		}
 
 		// Create a -SNAPSHOT of the project-alt1-stub that depends upon the other project's automagic version.
+		// The alt project defines a `-` as the otherBranchVersionDelimiter.
 		verifier = createVerifier("/project-alt1-stub", "origin/feature/poc/long-running", "2.0.0");
 		try {
 			verifier.getCliOptions().add("-Ddependency.stub.version=2.0.0+origin-feature-poc-long-running-SNAPSHOT");
 			verifier.getCliOptions().add("-Dplugin.stub.version=2.0.0+origin-feature-poc-long-running-SNAPSHOT");
 
 			verifier.executeGoal("deploy");
+			verifier.verifyTextInLog("Artifact versions updated with build metadata: -origin-feature-poc-long-running-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();
@@ -80,7 +82,7 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 		try {
 			verifier.executeGoal("deploy");
 
-			verifier.verifyTextInLog("Artifact versions updated with semVer build metadata: +origin-feature-poc-reattach-SNAPSHOT");
+			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-reattach-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();

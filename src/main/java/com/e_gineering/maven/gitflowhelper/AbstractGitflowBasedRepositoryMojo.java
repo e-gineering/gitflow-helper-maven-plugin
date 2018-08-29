@@ -87,6 +87,9 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     @Parameter(property = "otherDeployBranchPattern", required = false)
     String otherDeployBranchPattern;
 
+    @Parameter(defaultValue = "+", required = true)
+    String otherBranchVersionDelimiter;
+
     @Component
     private EnhancedLocalRepositoryManagerFactory localRepositoryManagerFactory;
 
