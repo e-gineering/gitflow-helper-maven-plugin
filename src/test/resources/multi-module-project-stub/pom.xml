@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.e-gineering</groupId>
+    <artifactId>gitflow-helper-maven-plugin-multi-module-parent-test-stub</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <packaging>pom</packaging>
+
+    <repositories>
+        <repository>
+            <id>releases</id>
+            <url>file:${it.repository.basedir}/releases</url>
+            <snapshots><enabled>false</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+        <repository>
+            <id>test-releases</id>
+            <url>file:${it.repository.basedir}/test-releases</url>
+            <snapshots><enabled>false</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+        <repository>
+            <id>snapshots</id>
+            <url>file:${it.repository.basedir}/snapshots</url>
+            <snapshots><enabled>true</enabled></snapshots>
+            <releases><enabled>false</enabled></releases>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.e-gineering</groupId>
+                <artifactId>gitflow-helper-maven-plugin</artifactId>
+                <version>${version.gitflow.plugin}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <releaseDeploymentRepository>releases</releaseDeploymentRepository>
+                    <stageDeploymentRepository>test-releases</stageDeploymentRepository>
+                    <snapshotDeploymentRepository>snapshots</snapshotDeploymentRepository>
+                    <otherDeployBranchPattern>(origin/)?feature/.*</otherDeployBranchPattern>
+                    <otherBranchVersionDelimiter>-</otherBranchVersionDelimiter>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>set-properties</goal>
+                            <goal>enforce-versions</goal>
+                            <goal>retarget-deploy</goal>
+                            <goal>promote-master</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <modules>
+      <module>module</module>
+    </modules>
+</project>
