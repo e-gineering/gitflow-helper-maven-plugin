@@ -110,7 +110,7 @@ All of the solutions to these issues are implemented independently in different 
                     <stageDeploymentRepository>localnexus-stage</stageDeploymentRepository>
                     <snapshotDeploymentRepository>localnexus-snapshots</snapshotDeploymentRepository>
                     <!-- Allow branches starting with feature/poc to be published as automagically versioned branch-name-SNAPSHOT artifacts -->
-                    <otherDeploymentBranchPattern>(origin/)feature/poc/.*</otherDeploymentBranchPattern>
+                    <otherDeployBranchPattern>(origin/)feature/poc/.*</otherDeployBranchPattern>
                 </configuration>
                 <executions>
                     <execution>
@@ -203,7 +203,7 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 | releaseDeploymentRepository | n/a | The repository to use for releases. (Builds with a GIT_BRANCH matching `masterBranchPattern` or `supportBranchPattern`) |
 | stageDeploymentRepository | n/a | The repository to use for staging. (Builds with a GIT_BRANCH matching `releaseBranchPattern` or `hotfixBranchPattern`) | 
 | snapshotDeploymentRepository | n/a | The repository to use for snapshots. (Builds matching `developmentBranchPattern`) |
-| otherDeploymentBranchPattern | n/a | Regex. When matched, the branch name is normalized and any artifacts produced by the build will include the normalized branch name and -SNAPSHOT. Deployment will target the snapshot repository |
+| otherDeployBranchPattern | n/a | Regex. When matched, the branch name is normalized and any artifacts produced by the build will include the normalized branch name and -SNAPSHOT. Deployment will target the snapshot repository |
 
 **The repository properties should follow the following format**, `id::layout::url::uniqueVersion`.
 
@@ -255,7 +255,7 @@ Can be replaced with the following plugin configuration, which also introduces t
 ### Deploying non-release (OTHER) type branches as -SNAPSHOT releases.
 
 In addition to setting up repository targets for release branches, the `retarget-depoy` branch can deploy other branches
-matching the `otherDeploymentBranchPattern` as -SNAPSHOT artifacts which include the branch name as build metadata.
+matching the `otherDeployBranchPattern` as -SNAPSHOT artifacts which include the branch name as build metadata.
 By default this is loosely based on the [semVer](https://semver.org) semantic version scheme, in that the plugin will 
 reversion any artifacts to be produced with `+feature-branch-name-normalized-SNAPSHOT` where any characters not in 
 `[0-9A-Za-z-.]` will be replaced with `-`. In cases where the `+` delimiter is problematic, you can override that default
