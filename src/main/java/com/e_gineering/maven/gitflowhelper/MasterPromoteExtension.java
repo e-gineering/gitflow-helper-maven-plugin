@@ -80,7 +80,7 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
         for (MavenProject project : session.getProjects()) {
             List<Plugin> dropPlugins = new ArrayList<>();
 
-            for (Plugin plugin : project.getBuildPlugins()) {
+            for (Plugin plugin : project.getModel().getBuild().getPlugins()) {
                 // Don't drop our plugin. Read it's config
                 if (plugin.getKey().equals("com.e-gineering:gitflow-helper-maven-plugin")) {
                     pluginFound = true;
@@ -189,7 +189,7 @@ public class MasterPromoteExtension extends AbstractMavenLifecycleParticipant {
                     // invoked goals for which could be mapped back to plugins in our project build.
                     // Goals invoked from the commandline which cannot be mapped back to our project, will get warnings, but should still execute.
                     // If someone is on 'master' and starts executing goals, we need to allow them to do that.
-                    project.getBuildPlugins().removeAll(pluginsToDrop.get(project));
+                    project.getModel().getBuild().getPlugins().removeAll(pluginsToDrop.get(project));
                 }
             }
         }
