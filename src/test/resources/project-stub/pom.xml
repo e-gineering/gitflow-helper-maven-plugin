@@ -6,7 +6,7 @@
 	<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
 	<version>${stub.project.version}</version>
 
-	<packaging>jar</packaging>
+	<packaging>bundle</packaging>
 
 	<repositories>
 		<repository>
@@ -90,6 +90,33 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.0.0</version>
+				<executions>
+					<execution>
+						<id>attach-text-file</id>
+						<goals>
+							<goal>attach-artifact</goal>
+						</goals>
+						<configuration>
+							<artifacts>
+								<artifact>
+									<file>src/build/resources/my-text-file.txt</file>
+									<type>text-file</type>
+								</artifact>
+							</artifacts>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>4.2.0</version>
+				<extensions>true</extensions>
 			</plugin>
 		</plugins>
 	</build>
