@@ -39,10 +39,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -68,7 +68,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     }
 
     private static PrintWriter newPrintWriter(File catalog) throws FileNotFoundException {
-        checkNotNull(catalog, "catalog must not be null");
+        Objects.requireNonNull(catalog, "catalog must not be null");
         return new PrintWriter(new OutputStreamWriter(new FileOutputStream(catalog), UTF_8));
     }
 

@@ -1,6 +1,6 @@
 package com.e_gineering.maven.gitflowhelper;
 
-import com.google.common.base.Joiner;
+import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.project.MavenProject;
@@ -9,17 +9,13 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 import javax.annotation.Nullable;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.emptyToNull;
+import java.util.Objects;
 
 /**
  * A helper factory for creating maven (GroupId, ArtifactId, Extension, Classifier, Version) coordinates.
  */
 class DefaultGavCoordinateHelper implements GavCoordinateHelper {
-
-    private static final Joiner GAV_JOINER = Joiner.on(':').skipNulls();
-
+    
     private final Logger log;
 
     private final MavenProject project;
@@ -34,9 +30,9 @@ class DefaultGavCoordinateHelper implements GavCoordinateHelper {
      * @param log     the logger
      */
     DefaultGavCoordinateHelper(RepositorySystemSession session, MavenProject project, Logger log) {
-        this.session = checkNotNull(session, "session must not be null");
-        this.project = checkNotNull(project, "project must not be null");
-        this.log = checkNotNull(log, "log must not be null");
+        this.session = Objects.requireNonNull(session, "session must not be null");
+        this.project = Objects.requireNonNull(project, "project must not be null");
+        this.log = Objects.requireNonNull(log, "log must not be null");
     }
 
     @Override
@@ -53,6 +49,10 @@ class DefaultGavCoordinateHelper implements GavCoordinateHelper {
                 emptyToNull(artifact.getExtension()),
                 emptyToNull(artifact.getClassifier())
         );
+    }
+    
+    private static String emptyToNull(final String s) {
+        return StringUtils.isBlank(s) ? null : s;
     }
 
     @Override
@@ -75,9 +75,19 @@ class DefaultGavCoordinateHelper implements GavCoordinateHelper {
                                   String version,
                                   @Nullable String extension,
                                   @Nullable String classifier) {
-        checkNotNull(groupId, "groupId must not be null");
-        checkNotNull(artifactId, "artifactId must not be null");
-        checkNotNull(version, "version must not be null");
-        return GAV_JOINER.join(groupId, artifactId, extension, classifier, version);
+        Objects.requireNonNull(groupId, "groupId must not be null");
+        Objects.requireNonNull(artifactId, "artifactId must not be null");
+        Objects.requireNonNull(version, "version must not be null");
+        
+        StringBuilder result = new StringBuilder();
+        for (String s : new String[]{groupId, artifactId, extension, classifier, version}) {
+            if (s != null) {
+                if (result.length() > 0) {
+                    result.append(":");
+                }
+                result.append(s);
+            }
+        }
+        return result.toString();
     }
 }

@@ -7,7 +7,7 @@ It does so by:
  * Enforcing [gitflow](http://nvie.com/posts/a-successful-git-branching-model/) version heuristics in [Maven](http://maven.apache.org/) projects.
  * Coercing Maven to gracefully support the gitflow workflow without imposing complex CI job configurations or complex Maven setups.
     * Setting distributionManagement repositories (for things like [maven-deploy-plugin](https://maven.apache.org/plugins/maven-deploy-plugin/)) based upon the current git branch.
-    * SCM tagging builds for master and support branches. You can use the project SCM definition, or if you omit it, you can resolve the CI server's repository connection information. (Zero Maven scm configuration necessary)
+    * SCM tagging builds for master and support branches. You can use the project SCM definition, or if you omit it, you canO resolve the CI server's repository connection information. (Zero Maven scm configuration necessary)
     * Promoting existing tested (staged) artifacts for release, rather than re-building the artifacts. Eliminates the risk of accidental master merges or commits resulting in untested code being released, and provides digest hash traceability for the history of artifacts.
     * Enabling the decoupling of repository deployment and execution environment delivery based on the current git branch.
     * Allowing for long-running non-release branches to be deployed to snapshots, automatically reversioning the artifacts based off the branch name.
@@ -110,7 +110,7 @@ All of the solutions to these issues are implemented independently in different 
                     <stageDeploymentRepository>localnexus-stage</stageDeploymentRepository>
                     <snapshotDeploymentRepository>localnexus-snapshots</snapshotDeploymentRepository>
                     <!-- Allow branches starting with feature/poc to be published as automagically versioned branch-name-SNAPSHOT artifacts -->
-                    <otherDeployBranchPattern>(origin/)feature/poc/.*</otherDeployBranchPattern>
+                    <otherDeployBranchPattern>(origin/)?feature/poc/.*</otherDeployBranchPattern>
                 </configuration>
                 <executions>
                     <execution>
