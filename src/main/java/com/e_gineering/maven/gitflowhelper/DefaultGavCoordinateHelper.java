@@ -2,6 +2,7 @@ package com.e_gineering.maven.gitflowhelper;
 
 import com.google.common.base.Joiner;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.handler.ArtifactHandler;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.logging.Logger;
 import org.eclipse.aether.RepositorySystemSession;
@@ -59,22 +60,7 @@ class DefaultGavCoordinateHelper implements GavCoordinateHelper {
         log.debug("   Encoding Coordinates For: " + artifact);
 
         // Get the extension according to the artifact type.
-        String extension = session.getArtifactTypeRegistry().get(artifact.getType()).getExtension();
-
-        // assert that the file extension matches the artifact packaging extension type, if there is an artifact file.
-        if (artifact.getFile() != null && !artifact.getFile().getName().toLowerCase().endsWith(extension.toLowerCase())) {
-            String filename = artifact.getFile().getName();
-            String fileExtension = filename.substring(filename.lastIndexOf('.') + 1);
-            log.warn(
-                    "    Artifact file name: " + artifact.getFile().getName() + " of type "
-                            + artifact.getType() + " does not match the extension for the ArtifactType: "
-                            + extension + ". "
-                            + "This is likely an issue with the packaging definition for '" + artifact.getType()
-                            + "' artifacts, which may be missing an extension definition. "
-                            + "The gitflow helper catalog will use the actual file extension: " + fileExtension
-            );
-            extension = fileExtension;
-        }
+        String extension = artifact.getArtifactHandler().getExtension();
 
         return getCoordinates(
                 artifact.getGroupId(),
