@@ -1,5 +1,6 @@
 package com.e_gineering.maven.gitflowhelper;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
@@ -10,6 +11,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProjectHelper;
+import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystemSession;
@@ -107,18 +109,6 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
 
     @Component(role = ArtifactRepositoryLayout.class)
     private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
-
-    @Component
-    private GavCoordinateHelperFactory gavCoordinateFactory;
-
-    private GavCoordinateHelper gavCoordinateHelper;
-
-    @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        gavCoordinateHelper = gavCoordinateFactory.using(session);
-
-        super.execute();
-    }
 
     /**
      * Builds an ArtifactRepository for targeting deployments.
@@ -260,7 +250,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     }
 
     private void catalogArtifact(PrintWriter writer, Artifact artifact) {
-        String coords = gavCoordinateHelper.getCoordinates(artifact);
+        String coords = getCoordinates(artifact);
         getLog().info("Cataloging: " + coords);
         writer.println(coords);
     }
@@ -364,7 +354,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
         }
 
         // Get the current build artifact coordinates, so that we replace rather than re-attach.
-        String projectArtifactCoordinates = gavCoordinateHelper.getCoordinates(project.getArtifact());
+        String projectArtifactCoordinates = getCoordinates(project.getArtifact());
         getLog().debug("Current Project Coordinates: " + projectArtifactCoordinates);
 
         // For each artifactResult, copy it to the build directory,
@@ -375,12 +365,12 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                 FileUtils.copyFileToDirectory(artifactResult.getArtifact().getFile(), buildDirectory);
                 artifactResult.setArtifact(artifactResult.getArtifact().setFile(new File(buildDirectory, artifactResult.getArtifact().getFile().getName())));
 
-                if (gavCoordinateHelper.getCoordinates(artifactResult).equals(projectArtifactCoordinates)) {
+                if (getCoordinates(artifactResult).equals(projectArtifactCoordinates)) {
                     getLog().debug("    Setting primary artifact: " + artifactResult.getArtifact().getFile());
                     project.getArtifact().setFile(artifactResult.getArtifact().getFile());
                 } else {
                     getLog().debug(
-                            "    Attaching artifact: " + gavCoordinateHelper.getCoordinates(artifactResult) + " "
+                            "    Attaching artifact: " + getCoordinates(artifactResult) + " "
                                     + artifactResult.getArtifact().getFile());
                     projectHelper.attachArtifact(project, artifactResult.getArtifact().getExtension(), artifactResult.getArtifact().getClassifier(), artifactResult.getArtifact().getFile());
                 }
@@ -431,5 +421,55 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                && project.getArtifact().getFile() != null
                && project.getArtifact().getFile().exists()
                && project.getArtifact().getFile().isFile();
+    }
+    
+    
+    private String getCoordinates(ArtifactResult artifactResult) {
+        return getCoordinates(
+                emptyToNull(artifactResult.getArtifact().getGroupId()),
+                emptyToNull(artifactResult.getArtifact().getArtifactId()),
+                emptyToNull(artifactResult.getArtifact().getBaseVersion()),
+                emptyToNull(artifactResult.getArtifact().getExtension()),
+                emptyToNull(artifactResult.getArtifact().getClassifier())
+        );
+    }
+    
+    private static String emptyToNull(final String s) {
+        return StringUtils.isBlank(s) ? null : s;
+    }
+    
+    private String getCoordinates(Artifact artifact) {
+        getLog().debug("   Encoding Coordinates For: " + artifact);
+        
+        // Get the extension according to the artifact type.
+        String extension = artifact.getArtifactHandler().getExtension();
+        
+        return getCoordinates(
+                artifact.getGroupId(),
+                artifact.getArtifactId(),
+                project.getVersion(),
+                extension, artifact.hasClassifier() ? artifact.getClassifier() : null
+        );
+    }
+    
+    private String getCoordinates(String groupId,
+                                  String artifactId,
+                                  String version,
+                                  @Nullable String extension,
+                                  @Nullable String classifier) {
+        Objects.requireNonNull(groupId, "groupId must not be null");
+        Objects.requireNonNull(artifactId, "artifactId must not be null");
+        Objects.requireNonNull(version, "version must not be null");
+        
+        StringBuilder result = new StringBuilder();
+        for (String s : new String[]{groupId, artifactId, extension, classifier, version}) {
+            if (s != null) {
+                if (result.length() > 0) {
+                    result.append(":");
+                }
+                result.append(s);
+            }
+        }
+        return result.toString();
     }
 }
