@@ -51,25 +51,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchMojo {
     private static final String CATALOG_HEADER = "[artifacts]";
 
-    /**
-     * Returns the policy or a default policy if {@code policy} is null.
-     *
-     * @param policy the policy to check
-     * @return the {@link org.apache.maven.model.RepositoryPolicy}
-     */
-    private static org.apache.maven.model.RepositoryPolicy ensureRepositoryPolicy(
-            @Nullable org.apache.maven.model.RepositoryPolicy policy) {
-        if (policy == null) {
-            return new org.apache.maven.model.RepositoryPolicy();
-        }
-        return policy;
-    }
-
     private static PrintWriter newPrintWriter(File catalog) throws FileNotFoundException {
         Objects.requireNonNull(catalog, "catalog must not be null");
         return new PrintWriter(new OutputStreamWriter(new FileOutputStream(catalog), UTF_8));
     }
-
     
     @Parameter(property = "releaseDeploymentRepositoryId", required = true)
     String releaseDeploymentRepository;
