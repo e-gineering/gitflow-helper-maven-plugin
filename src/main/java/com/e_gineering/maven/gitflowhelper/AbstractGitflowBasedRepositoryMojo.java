@@ -1,20 +1,23 @@
 package com.e_gineering.maven.gitflowhelper;
 
+import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.InvalidRepositoryException;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.repository.ArtifactRepositoryFactory;
-import org.apache.maven.artifact.repository.layout.ArtifactRepositoryLayout;
-import org.apache.maven.model.Repository;
+import org.apache.maven.bridge.MavenRepositorySystem;
+import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProjectHelper;
+import org.apache.maven.shared.utils.StringUtils;
+import org.codehaus.plexus.component.annotations.Requirement;
 import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
+import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
-import org.eclipse.aether.impl.ArtifactResolver;
 import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -22,7 +25,6 @@ import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
-import org.eclipse.aether.util.repository.AuthenticationBuilder;
 
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
@@ -36,12 +38,10 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Optional;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -49,162 +49,59 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * Common configuration and plumbing (support methods) for Repository operations on Gitflow Mojo.
  */
 abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchMojo {
-
-    private static final Pattern ALT_REPO_SYNTAX_PATTERN = Pattern.compile("(.+)::(.+)::(.+)::(.+)");
     private static final String CATALOG_HEADER = "[artifacts]";
-
-    /**
-     * Returns the policy or a default policy if {@code policy} is null.
-     *
-     * @param policy the policy to check
-     * @return the {@link org.apache.maven.model.RepositoryPolicy}
-     */
-    private static org.apache.maven.model.RepositoryPolicy ensureRepositoryPolicy(
-            @Nullable org.apache.maven.model.RepositoryPolicy policy) {
-        if (policy == null) {
-            return new org.apache.maven.model.RepositoryPolicy();
-        }
-        return policy;
-    }
 
     private static PrintWriter newPrintWriter(File catalog) throws FileNotFoundException {
         Objects.requireNonNull(catalog, "catalog must not be null");
         return new PrintWriter(new OutputStreamWriter(new FileOutputStream(catalog), UTF_8));
     }
-
-    @Parameter(property = "releaseDeploymentRepository", required = true)
+    
+    @Parameter(property = "releaseDeploymentRepositoryId", required = true)
     String releaseDeploymentRepository;
 
-    @Parameter(property = "stageDeploymentRepository", required = true)
+    @Parameter(property = "stageDeploymentRepositoryId", required = true)
     String stageDeploymentRepository;
 
-    @Parameter(property = "snapshotDeploymentRepository", required = true)
+    @Parameter(property = "snapshotDeploymentRepositoryId", required = true)
     String snapshotDeploymentRepository;
-
-    @Parameter(defaultValue = "${repositorySystemSession}", required = true)
-    RepositorySystemSession session;
-
+    
     @Parameter(property = "otherDeployBranchPattern", required = false)
     String otherDeployBranchPattern;
 
     @Parameter(defaultValue = "+", required = true)
     String otherBranchVersionDelimiter;
-
-    @Component
-    private EnhancedLocalRepositoryManagerFactory localRepositoryManagerFactory;
-
+    
+    @Parameter(defaultValue = "${repositorySystemSession}", required = true)
+    RepositorySystemSession repositorySystemSession;
+    
     @Parameter(defaultValue = "${project.build.directory}", required = true)
     private File buildDirectory;
-
+    
     @Component
-    private ArtifactRepositoryFactory repositoryFactory;
-
+    private RepositorySystem repositorySystem;
+    
     @Component
-    private ArtifactResolver artifactResolver;
-
+    private EnhancedLocalRepositoryManagerFactory localRepositoryManagerFactory;
+    
     @Component
     private MavenProjectHelper projectHelper;
-
-    @Component(role = ArtifactRepositoryLayout.class)
-    private Map<String, ArtifactRepositoryLayout> repositoryLayouts;
-
-    @Component
-    private GavCoordinateHelperFactory gavCoordinateFactory;
-
-    private GavCoordinateHelper gavCoordinateHelper;
-
-    @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        gavCoordinateHelper = gavCoordinateFactory.using(session);
-
-        super.execute();
-    }
-
+    
     /**
-     * Builds an ArtifactRepository for targeting deployments.
+     * Creates a Maven ArtifactRepository for targeting deployments.
      *
-     * @param altRepository the repository identifier or alt-syntax specification
+     * @param id the repository identifier
      * @return the resolved repository
-     * @throws MojoExecutionException if the provided repository specification defines an invalid repository layout
-     * @throws MojoFailureException if the provided repository specification is invalid
-     */
-    ArtifactRepository getDeploymentRepository(final String altRepository)
-        throws MojoExecutionException, MojoFailureException {
-        Matcher matcher = ALT_REPO_SYNTAX_PATTERN.matcher(altRepository);
-        Repository candidate = null;
-        if (!matcher.matches()) {
-            for (int i = 0; i < project.getRepositories().size(); i++) {
-                candidate = project.getRepositories().get(i);
-                getLog().debug("Checking defined repository ID: " + candidate.getId().trim() + " against: " + altRepository.trim());
-                if (candidate.getId().trim().equals(altRepository.trim())) {
-                    break;
-                }
-                candidate = null;
-            }
-
-            if (candidate == null) {
-                throw new MojoFailureException(altRepository, "Invalid syntax for repository or repository id not resolved..",
-                        "Invalid syntax for repository. Use \"id::layout::url::unique\" or only specify the \"id\"." +
-                        " For the \"id\", make sure that the corresponding <repository> element has been defined (e.g. in the ~/.m2/settings.xml file)");
-            }
-        }
-
-        if (getLog().isDebugEnabled()) {
-            getLog().debug("Getting maven deployment repository (to target artifacts) for: " + altRepository);
-        }
-
-        if (candidate == null) {
-            String id = matcher.group(1).trim();
-            String layout = matcher.group(2).trim();
-            String url = matcher.group(3).trim();
-            boolean unique = Boolean.parseBoolean(matcher.group(4).trim());
-
-            ArtifactRepositoryLayout repoLayout = getLayout(layout);
-
-            return repositoryFactory.createDeploymentArtifactRepository(id, url, repoLayout, unique);
-        } else {
-            return repositoryFactory.createDeploymentArtifactRepository(
-                    candidate.getId(),
-                    candidate.getUrl(),
-                    getLayout(candidate.getLayout()),
-                    ensureRepositoryPolicy(candidate.getSnapshots()).isEnabled()
-            );
-        }
-    }
-
-    /**
-     * Builds a RemoteRepository for resolving artifacts.
      *
-     * @param altRepository the repository identifier or alt-syntax specification
-     * @return the resolve remote repository
-     * @throws MojoExecutionException if the provided repository specification defines an invalid repository layout
-     * @throws MojoFailureException if the provided repository specification is invalid
+     * @throws MojoFailureException if the repository id is not defined.
      */
-    RemoteRepository getRepository(final String altRepository) throws MojoExecutionException, MojoFailureException {
-        if (getLog().isDebugEnabled()) {
-            getLog().debug("Creating remote Aether repository (to resolve remote artifacts) for: " + altRepository);
+    ArtifactRepository getDeploymentRepository(final String id) throws MojoFailureException {
+        Objects.requireNonNull(id, "A repository id must be specified.");
+        Optional<ArtifactRepository> repo = project.getRemoteArtifactRepositories().stream().filter(r -> r.getId().equals(id)).findFirst();
+
+        if (!repo.isPresent()) {
+            throw new MojoFailureException("No Repository with id `" + id + "` is defined.");
         }
-        // Get an appropriate injected ArtifactRepository. (This resolves authentication in the 'normal' manner from Maven)
-        ArtifactRepository remoteArtifactRepo = getDeploymentRepository(altRepository);
-
-        if (getLog().isDebugEnabled()) {
-            getLog().debug("Resolved maven deployment repository. Transcribing to Aether Repository...");
-        }
-
-        RemoteRepository.Builder remoteRepoBuilder = new RemoteRepository.Builder(remoteArtifactRepo.getId(), remoteArtifactRepo.getLayout().getId(), remoteArtifactRepo.getUrl());
-
-        // Add authentication.
-        if (remoteArtifactRepo.getAuthentication() != null) {
-            if (getLog().isDebugEnabled()) {
-                getLog().debug("Maven deployment repsoitory has Authentication. Transcribing to Aether Authentication...");
-            }
-            remoteRepoBuilder.setAuthentication(new AuthenticationBuilder().addUsername(remoteArtifactRepo.getAuthentication().getUsername())
-                    .addPassword(remoteArtifactRepo.getAuthentication().getPassword())
-                    .addPrivateKey(remoteArtifactRepo.getAuthentication().getPrivateKey(), remoteArtifactRepo.getAuthentication().getPassphrase())
-                    .build());
-        }
-
-        return remoteRepoBuilder.build();
+        return repo.get();
     }
 
     /**
@@ -260,7 +157,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     }
 
     private void catalogArtifact(PrintWriter writer, Artifact artifact) {
-        String coords = gavCoordinateHelper.getCoordinates(artifact);
+        String coords = getCoordinates(artifact);
         getLog().info("Cataloging: " + coords);
         writer.println(coords);
     }
@@ -269,31 +166,31 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
      * Resolves artifacts from the given sourceRepository by first resolving and processing the artifact catalog
      * created by the promote-master mojo.
      *
-     * @param sourceRepository the repository identifier or alt-syntax specification
-     * @param disableLocal if the staged artifacts should be downloaded to an isolated repository
+     * @param sourceRepository An ArtifactRepository to use as a RemoteRepository when supplied. Otherwise, only the local repository will be used.
+     * @param disableLocal if artifacts should be downloaded from a remote to an isolated repository, bypassing the 'standard' maven local repo.
+     *
      * @throws MojoExecutionException for any unhandled maven exception
-     * @throws MojoFailureException if the provided repository specification is invalid
      */
-    void attachExistingArtifacts(final String sourceRepository, final boolean disableLocal)
+    void attachExistingArtifacts(@Nullable final String sourceRepository, final boolean disableLocal)
         throws MojoExecutionException, MojoFailureException {
-        List<RemoteRepository> remoteRepositories = new ArrayList<>();
-
-        if (sourceRepository == null) {
+        
+        List<ArtifactRepository> remoteArtifactRepositories = new ArrayList<>();
+        Optional<ArtifactRepository> repo = project.getRemoteArtifactRepositories().stream().filter(r -> r.getId().equals(sourceRepository)).findFirst();
+        if (repo.isPresent()) {
+            remoteArtifactRepositories.add(repo.get());
+        } else {
             if (disableLocal) {
                 throw new MojoExecutionException("Cannot resolve artifacts from 'null' repository if the local repository is also disabled.");
             }
             getLog().debug("Resolving existing artifacts from local repository only.");
-        } else {
-            // Add the remote repository.
-            remoteRepositories.addAll(Collections.singletonList(getRepository(sourceRepository)));
         }
-
+        List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(remoteArtifactRepositories);
+        
         // A place to store our resolved files...
         List<ArtifactResult> resolvedArtifacts = new ArrayList<>();
 
-
-        // Use a custom repository session, setup to force a few behaviors we like.
-        DefaultRepositorySystemSession tempSession = new DefaultRepositorySystemSession(session);
+        // Use a customized repository session, setup to force a few behaviors we like.
+        DefaultRepositorySystemSession tempSession = new DefaultRepositorySystemSession(repositorySystemSession);
         tempSession.setUpdatePolicy(RepositoryPolicy.UPDATE_POLICY_ALWAYS);
 
         File tempRepo = null;
@@ -308,6 +205,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                 getLog().warn("Failed to disable local repository path.", ex);
             }
         }
+        tempSession.setReadOnly();
 
         List<ArtifactRequest> requiredArtifacts = new ArrayList<>();
 
@@ -318,7 +216,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                     project.getGroupId(), project.getArtifactId(), "catalog", "txt", project.getVersion()
             );
             ArtifactRequest request = new ArtifactRequest(artifact, remoteRepositories, null);
-            ArtifactResult catalogResult = artifactResolver.resolveArtifact(tempSession, request);
+            ArtifactResult catalogResult = repositorySystem.resolveArtifact(tempSession, request);
             resolvedArtifacts.add(catalogResult);
 
             if (catalogResult.isResolved()) {
@@ -357,14 +255,13 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
 
         // Resolve the artifacts from the catalog (if there are any)
         try {
-            resolvedArtifacts.addAll(artifactResolver.resolveArtifacts(tempSession, requiredArtifacts));
+            resolvedArtifacts.addAll(repositorySystem.resolveArtifacts(tempSession, requiredArtifacts));
         } catch (ArtifactResolutionException are) {
-            throw new MojoExecutionException("Failed to resolve the required project files from: " +
-                    sourceRepository, are);
+            throw new MojoExecutionException("Failed to resolve the required project files from repository: " + sourceRepository, are);
         }
 
         // Get the current build artifact coordinates, so that we replace rather than re-attach.
-        String projectArtifactCoordinates = gavCoordinateHelper.getCoordinates(project.getArtifact());
+        String projectArtifactCoordinates = getCoordinates(project.getArtifact());
         getLog().debug("Current Project Coordinates: " + projectArtifactCoordinates);
 
         // For each artifactResult, copy it to the build directory,
@@ -375,12 +272,12 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                 FileUtils.copyFileToDirectory(artifactResult.getArtifact().getFile(), buildDirectory);
                 artifactResult.setArtifact(artifactResult.getArtifact().setFile(new File(buildDirectory, artifactResult.getArtifact().getFile().getName())));
 
-                if (gavCoordinateHelper.getCoordinates(artifactResult).equals(projectArtifactCoordinates)) {
+                if (getCoordinates(artifactResult).equals(projectArtifactCoordinates)) {
                     getLog().debug("    Setting primary artifact: " + artifactResult.getArtifact().getFile());
                     project.getArtifact().setFile(artifactResult.getArtifact().getFile());
                 } else {
                     getLog().debug(
-                            "    Attaching artifact: " + gavCoordinateHelper.getCoordinates(artifactResult) + " "
+                            "    Attaching artifact: " + getCoordinates(artifactResult) + " "
                                     + artifactResult.getArtifact().getFile());
                     projectHelper.attachArtifact(project, artifactResult.getArtifact().getExtension(), artifactResult.getArtifact().getClassifier(), artifactResult.getArtifact().getFile());
                 }
@@ -399,15 +296,6 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                 }
             }
         }
-    }
-
-    private ArtifactRepositoryLayout getLayout(final String id) throws MojoExecutionException {
-        ArtifactRepositoryLayout layout = repositoryLayouts.get(id);
-        if (layout == null) {
-            throw new MojoExecutionException("Invalid repository layout: " + id);
-        }
-
-        return layout;
     }
 
     /**
@@ -431,5 +319,55 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                && project.getArtifact().getFile() != null
                && project.getArtifact().getFile().exists()
                && project.getArtifact().getFile().isFile();
+    }
+    
+    
+    private String getCoordinates(ArtifactResult artifactResult) {
+        return getCoordinates(
+                emptyToNull(artifactResult.getArtifact().getGroupId()),
+                emptyToNull(artifactResult.getArtifact().getArtifactId()),
+                emptyToNull(artifactResult.getArtifact().getBaseVersion()),
+                emptyToNull(artifactResult.getArtifact().getExtension()),
+                emptyToNull(artifactResult.getArtifact().getClassifier())
+        );
+    }
+    
+    private static String emptyToNull(final String s) {
+        return StringUtils.isBlank(s) ? null : s;
+    }
+    
+    private String getCoordinates(Artifact artifact) {
+        getLog().debug("   Encoding Coordinates For: " + artifact);
+        
+        // Get the extension according to the artifact type.
+        String extension = artifact.getArtifactHandler().getExtension();
+        
+        return getCoordinates(
+                artifact.getGroupId(),
+                artifact.getArtifactId(),
+                project.getVersion(),
+                extension, artifact.hasClassifier() ? artifact.getClassifier() : null
+        );
+    }
+    
+    private String getCoordinates(String groupId,
+                                  String artifactId,
+                                  String version,
+                                  @Nullable String extension,
+                                  @Nullable String classifier) {
+        Objects.requireNonNull(groupId, "groupId must not be null");
+        Objects.requireNonNull(artifactId, "artifactId must not be null");
+        Objects.requireNonNull(version, "version must not be null");
+        
+        StringBuilder result = new StringBuilder();
+        for (String s : new String[]{groupId, artifactId, extension, classifier, version}) {
+            if (s != null) {
+                if (result.length() > 0) {
+                    result.append(":");
+                }
+                result.append(s);
+            }
+        }
+        return result.toString();
     }
 }

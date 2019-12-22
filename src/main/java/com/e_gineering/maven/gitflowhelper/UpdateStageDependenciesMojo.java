@@ -1,6 +1,8 @@
 package com.e_gineering.maven.gitflowhelper;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.RepositoryUtils;
+import org.apache.maven.artifact.InvalidRepositoryException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -20,6 +22,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,14 +39,14 @@ public class UpdateStageDependenciesMojo extends AbstractGitflowBasedRepositoryM
     protected void execute(final GitBranchInfo branchInfo) throws MojoExecutionException, MojoFailureException {
         getLog().debug("update-stage-dependencies setting up Repository session...");
 
-        DefaultRepositorySystemSession reresolveSession = new DefaultRepositorySystemSession(session);
+        DefaultRepositorySystemSession reresolveSession = new DefaultRepositorySystemSession(repositorySystemSession);
         reresolveSession.setUpdatePolicy(org.eclipse.aether.repository.RepositoryPolicy.UPDATE_POLICY_ALWAYS);
         reresolveSession.setCache(new DefaultRepositoryCache());
 
         LocalRepositoryManager localRepositoryManager = reresolveSession.getLocalRepositoryManager();
 
         getLog().debug("configuring stage as the remote repository for artifact resolution requests...");
-        List<RemoteRepository> stageRepo = Arrays.asList(getRepository(stageDeploymentRepository));
+        List<RemoteRepository> stageRepo = Arrays.asList(RepositoryUtils.toRepo(getDeploymentRepository(stageDeploymentRepository)));
 
         boolean itemsPurged = false;
 

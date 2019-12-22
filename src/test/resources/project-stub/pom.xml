@@ -15,12 +15,12 @@
 			<snapshots><enabled>false</enabled></snapshots>
 			<releases><enabled>true</enabled></releases>
 		</repository>
-		<!--<repository>-->
-			<!--<id>test-releases</id>-->
-			<!--<url>file:${it.repository.basedir}/test-releases</url>-->
-			<!--<snapshots><enabled>false</enabled></snapshots>-->
-			<!--<releases><enabled>true</enabled></releases>-->
-		<!--</repository>-->
+		<repository>
+			<id>test-releases</id>
+			<url>file:${it.repository.basedir}/test-releases</url>
+			<snapshots><enabled>false</enabled></snapshots>
+			<releases><enabled>true</enabled></releases>
+		</repository>
 		<repository>
 			<id>snapshots</id>
 			<url>file:${it.repository.basedir}/snapshots</url>
@@ -48,7 +48,7 @@
 				<extensions>true</extensions>
 				<configuration>
 					<releaseDeploymentRepository>releases</releaseDeploymentRepository>
-					<stageDeploymentRepository>test-releases::default::file:${it.repository.basedir}/test-releases::false</stageDeploymentRepository>
+					<stageDeploymentRepository>test-releases</stageDeploymentRepository>
 					<snapshotDeploymentRepository>snapshots</snapshotDeploymentRepository>
 					<masterBranchPropertyFile>src/build/resources/master.build.properties</masterBranchPropertyFile>
 					<supportBranchProperties>

@@ -98,14 +98,7 @@ All of the solutions to these issues are implemented independently in different 
                 <version>${gitflow.helper.plugin.version}</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <!--
-                         These repository definitions expect either a configured repository id, or an inline definition
-                         like 'id::layout::url::unique'
-                         
-                         For example:
-                         
-                         release::default::https://some.server.path/content/repositories/test-releases::false
-                    -->
+                    <!-- Tell the plugins what repositories to use (by id) -->
                     <releaseDeploymentRepository>localnexus-releases</releaseDeploymentRepository>
                     <stageDeploymentRepository>localnexus-stage</stageDeploymentRepository>
                     <snapshotDeploymentRepository>localnexus-snapshots</snapshotDeploymentRepository>
@@ -207,27 +200,47 @@ plugins in the build process (deploy, site-deploy, etc.) will use the repositori
 
 **The repository properties should follow the following format**, `id::layout::url::uniqueVersion`.
 
-When using this plugin, the `<distributionManagement>` repository definitions can be completely removed from your pom.xml 
-The following configuration block:
+When using this plugin, the `<distributionManagement>` repository definitions should be removed from your pom.xml 
+This block, is replaced by defining 'normal' repositories which are then referenced by the `<id>` and used by the gitflow-helper-maven-plugin to retarget artifact repository deployment and resolution.
 
         <distributionManagement>
             <snapshotRepository>
                 <id>snapshots</id>
                 <layout>default</layout>
                 <url>https://some.server.path/content/repositories/snapshots</url>
-                <uniqueVersion>true</uniqueVersion>
             </snapshotRepository>
             <repository>
                 <id>releases</id>
                 <layout>default</layout>
                 <url>https://some.server.path/content/repositories/releases</url>
-                <uniqueVersion>false</uniqueVersion>
             </repository>
         </distributionManagement>
         
-Can be replaced with the following plugin configuration, which also introduces the stage repository.
+Keep in mind repositories can be defined in a user settings.xml as part of your development profiles to keep from repeating yourself in project files.
+Below is an example configuration for the gitflow-helper-maven-plugin.
 
     <project...>
+    ...
+    <repositories>
+        <repository>
+            <id>snapshots</id>
+            <url>https://some.server.path/content/repositories/snapshots</url>
+            <snapshots><enabled>true</enabled></snapshots>
+            <releases><enabled>false</enabled></releases>
+        </repository>
+        <repository>
+            <id>test-releases</id>
+            <url>https://some.server.path/content/repositories/test-releases</url>
+            <snapshots><enabled>false</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+        <repository>
+            <id>releases</id>
+            <url>https://some.server.path/content/repositories/releases</url>
+            <snapshots><enabled>false</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+    </repositories>
     ...
     <build>
         <plugins>
@@ -236,9 +249,9 @@ Can be replaced with the following plugin configuration, which also introduces t
                 <artifactId>gitflow-helper-maven-plugin</artifactId>
                 <version>${gitflow.helper.plugin.version}</version>
                 <configuration>
-                    <releaseDeploymentRepository>releases::default::https://some.server.path/content/repositories/releases::false</releaseDeploymentRepository>
-                    <stageDeploymentRepository>stage::default::https://some.server.path/content/repositories/stage::false</stageDeploymentRepository>
-                    <snapshotDeploymentRepository>snapshots::default::https://some.server.path/content/repositories/snapshots::true</snapshotDeploymentRepository>
+                    <releaseDeploymentRepository>releases</releaseDeploymentRepository>
+                    <stageDeploymentRepository>stage</stageDeploymentRepository>
+                    <snapshotDeploymentRepository>snapshots</snapshotDeploymentRepository>
                 </configuration>
                 <executions>
                     <execution>
@@ -405,7 +418,7 @@ You can then connect a remote debugger and step through the plugin code.
 ## Building with IntelliJ IDEA notes
 ### To Debug Test Code:
 Configure the Maven commandline to include
-`-DforkMode=never` You will likely get warnings when you run maven with this argument.
+`-DforkCount=0` 
 
 ### To inspect code-coverage results from Integration Tests:
 * Select the **Analyze** -> **Show Coverage Data** menu.
