@@ -3,11 +3,11 @@ package com.e_gineering.maven.gitflowhelper;
 import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.MavenExecutionException;
+import org.apache.maven.artifact.versioning.VersionRange;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.MavenProjectHelper;
 import org.codehaus.plexus.component.annotations.Component;
 
 import java.util.HashMap;
@@ -35,7 +35,13 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
                             String newVersion = getAsBranchSnapshotVersion(project.getVersion(), branchInfo.getName());
                             oldVersions.put(project, project.getVersion());
                             logger.info("Updating project " + project.getGroupId() + ":" + project.getArtifactId() + ":" + project.getVersion() + " to: " + newVersion);
+                            // Update the build finalName in case it contains the version string.
+                            project.getBuild().setFinalName(project.getBuild().getFinalName().replace(project.getVersion(), newVersion));
+                            // Update other parts of the build model.
                             project.setVersion(newVersion);
+                            project.getArtifact().setBaseVersion(newVersion);
+                            project.getArtifact().setVersion(newVersion);
+                            project.getArtifact().setVersionRange(VersionRange.createFromVersion(newVersion));
                         }
                         
                         // Now enumerate all the projects looking for dependencies that use the updated projects.
