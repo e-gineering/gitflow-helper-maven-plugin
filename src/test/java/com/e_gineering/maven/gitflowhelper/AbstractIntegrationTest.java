@@ -74,8 +74,8 @@ public abstract class AbstractIntegrationTest {
 
 		verifier.getSystemProperties().put("maven.multiModuleProjectDirectory", basedir);
 
-		verifier.getSystemProperties().put("maven.compiler.source", "1.7");
-		verifier.getSystemProperties().put("maven.compiler.target", "1.7");
+		verifier.getSystemProperties().put("maven.compiler.source", "1.8");
+		verifier.getSystemProperties().put("maven.compiler.target", "1.8");
 
 		return verifier;
 	}

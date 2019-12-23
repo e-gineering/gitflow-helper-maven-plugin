@@ -6,7 +6,7 @@
 	<artifactId>gitflow-helper-maven-plugin-test-stub</artifactId>
 	<version>${stub.project.version}</version>
 
-	<packaging>jar</packaging>
+	<packaging>bundle</packaging>
 
 	<repositories>
 		<repository>
@@ -15,12 +15,12 @@
 			<snapshots><enabled>false</enabled></snapshots>
 			<releases><enabled>true</enabled></releases>
 		</repository>
-		<!--<repository>-->
-			<!--<id>test-releases</id>-->
-			<!--<url>file:${it.repository.basedir}/test-releases</url>-->
-			<!--<snapshots><enabled>false</enabled></snapshots>-->
-			<!--<releases><enabled>true</enabled></releases>-->
-		<!--</repository>-->
+		<repository>
+			<id>test-releases</id>
+			<url>file:${it.repository.basedir}/test-releases</url>
+			<snapshots><enabled>false</enabled></snapshots>
+			<releases><enabled>true</enabled></releases>
+		</repository>
 		<repository>
 			<id>snapshots</id>
 			<url>file:${it.repository.basedir}/snapshots</url>
@@ -48,7 +48,7 @@
 				<extensions>true</extensions>
 				<configuration>
 					<releaseDeploymentRepository>releases</releaseDeploymentRepository>
-					<stageDeploymentRepository>test-releases::default::file:${it.repository.basedir}/test-releases::false</stageDeploymentRepository>
+					<stageDeploymentRepository>test-releases</stageDeploymentRepository>
 					<snapshotDeploymentRepository>snapshots</snapshotDeploymentRepository>
 					<masterBranchPropertyFile>src/build/resources/master.build.properties</masterBranchPropertyFile>
 					<supportBranchProperties>
@@ -90,6 +90,33 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.0.0</version>
+				<executions>
+					<execution>
+						<id>attach-text-file</id>
+						<goals>
+							<goal>attach-artifact</goal>
+						</goals>
+						<configuration>
+							<artifacts>
+								<artifact>
+									<file>src/build/resources/my-text-file.txt</file>
+									<type>text-file</type>
+								</artifact>
+							</artifacts>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>4.2.0</version>
+				<extensions>true</extensions>
 			</plugin>
 		</plugins>
 	</build>
