@@ -13,8 +13,9 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 	public void featureSnapshotSemVer() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/my-feature-branch", "5.0.0-SNAPSHOT");
 		try {
-			verifier.executeGoal("deploy");
-
+			verifier.addCliOption("-Dexpression=project.version");
+			verifier.executeGoal("help:evaluate");
+			
 			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-my-feature-branch-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
@@ -26,7 +27,7 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 	public void featureSemVer() throws Exception {
 		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/my-feature-branch.with.other.identifiers", "5.0.1");
 		try {
-			verifier.executeGoal("deploy");
+			verifier.executeGoal("initialize");
 
 			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-my-feature-branch.with.other.identifiers-SNAPSHOT");
 			verifier.verifyErrorFreeLog();

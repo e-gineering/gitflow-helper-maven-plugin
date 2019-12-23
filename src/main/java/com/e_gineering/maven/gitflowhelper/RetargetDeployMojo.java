@@ -41,18 +41,8 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 String otherBranchesToDeploy = resolveExpression(otherDeployBranchPattern);
 	            if (!"".equals(otherBranchesToDeploy) && gitBranchInfo.getName().matches(otherBranchesToDeploy)) {
                     setTargetSnapshots();
-
-                    project.setVersion(getAsBranchSnapshotVersion(project.getVersion(), gitBranchInfo.getName()));
-
-                    // Update any attached artifacts.
-                    updateArtifactVersion(project.getArtifact(), gitBranchInfo.getName());
-                    for (Artifact a : project.getAttachedArtifacts()) {
-                        updateArtifactVersion(a, gitBranchInfo.getName());
-                    }
-
-                    getLog().info("Artifact versions updated with build metadata: " + getAsBranchSnapshotVersion("", gitBranchInfo.getName()));
-                    break;
                 }
+	            break;
             }
             default: {
                 unsetRepos();
@@ -60,23 +50,6 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
             }
         }
     }
-
-    /**
-     * Updates artifact versions for a given branch name.
-     * @param a artifact to update (may be null)
-     * @param branchName the branch name
-     */
-    private void updateArtifactVersion(Artifact a, String branchName) {
-        if (a != null) {
-            a.setVersion(getAsBranchSnapshotVersion(a.getVersion(), branchName));
-            try {
-                a.setVersionRange(VersionRange.createFromVersion(a.getVersion()));
-            } catch (UnsupportedOperationException uoe) { // Some artifact types don't like this.
-                getLog().debug("Unable to update VersionRange for artifact.");
-            }
-        }
-    }
-
 
     /**
      * Given a String version (which may be a final or -SNAPSHOT version) return a

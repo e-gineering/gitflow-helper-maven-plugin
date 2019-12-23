@@ -411,7 +411,7 @@ Then, change directories:
 From there, you'll need to supply the required environment variables or commandline arguments to `mvnDebug`:
 ```
 export GIT_BRANCH=origin/feature/mybranch-foo-bar
-mvnDebug -Dstub.project.version=5.0.0-SNAPSHOT -DotherBranchDeploy=semver -DallowGitflowPluginSnapshot=true  deploy
+mvnDebug -Dstub.project.version=5.0.0-SNAPSHOT -DallowGitflowPluginSnapshot=true  deploy
 ```
 You can then connect a remote debugger and step through the plugin code.
 

@@ -15,6 +15,8 @@ import org.apache.maven.project.ProjectDependenciesResolver;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.graph.Dependency;
+import org.eclipse.aether.graph.DependencyFilter;
+import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.repository.LocalArtifactRequest;
 import org.eclipse.aether.repository.LocalArtifactResult;
 import org.eclipse.aether.repository.LocalRepositoryManager;
@@ -51,8 +53,8 @@ public class UpdateStageDependenciesMojo extends AbstractGitflowBasedRepositoryM
         boolean itemsPurged = false;
 
         try {
-            DependencyResolutionResult depencencyResult = dependenciesResolver.resolve(
-                    new DefaultDependencyResolutionRequest(project, reresolveSession));
+            DefaultDependencyResolutionRequest projectDepsRequest = new DefaultDependencyResolutionRequest(project, reresolveSession);
+            DependencyResolutionResult depencencyResult = dependenciesResolver.resolve(projectDepsRequest);
 
             for (Dependency dependency : depencencyResult.getResolvedDependencies()) {
                 if (!dependency.getArtifact().isSnapshot()) {
