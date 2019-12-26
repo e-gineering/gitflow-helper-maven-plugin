@@ -1,20 +1,34 @@
 package com.e_gineering.maven.gitflowhelper;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.InvalidRepositoryException;
-import org.apache.maven.artifact.versioning.VersionRange;
-import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.DistributionManagement;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.ModelReader;
+import org.apache.maven.model.io.ModelWriter;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Set the target repository for deployment based upon the GIT_BRANCH being built.
  */
 @Mojo(name = "retarget-deploy", defaultPhase = LifecyclePhase.VALIDATE)
 public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
+    
+    @Component
+    ModelWriter modelWriter;
+    
+    @Component
+    ModelReader modelReader;
+    
+    
+    
     @Override
     protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {
         // Ensure we have a 'null' distribution management for other plugins which expect it.

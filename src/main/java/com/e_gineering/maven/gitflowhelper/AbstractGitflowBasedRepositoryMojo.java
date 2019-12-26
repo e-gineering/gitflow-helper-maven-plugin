@@ -75,7 +75,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     RepositorySystemSession repositorySystemSession;
     
     @Parameter(defaultValue = "${project.build.directory}", required = true)
-    private File buildDirectory;
+    File buildDirectory;
     
     @Component
     private RepositorySystem repositorySystem;
