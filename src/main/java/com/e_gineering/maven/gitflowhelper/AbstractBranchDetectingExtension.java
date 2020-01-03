@@ -5,8 +5,6 @@ import org.apache.maven.MavenExecutionException;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.internal.MojoDescriptorCreator;
 import org.apache.maven.model.Plugin;
-import org.apache.maven.plugin.prefix.NoPluginFoundForPrefixException;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.scm.manager.ScmManager;
 import org.codehaus.plexus.component.annotations.Requirement;
@@ -15,9 +13,6 @@ import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Properties;
 
 public abstract class AbstractBranchDetectingExtension extends AbstractMavenLifecycleParticipant {

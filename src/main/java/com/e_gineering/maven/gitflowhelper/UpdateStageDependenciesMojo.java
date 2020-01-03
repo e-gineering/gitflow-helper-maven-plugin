@@ -2,7 +2,6 @@ package com.e_gineering.maven.gitflowhelper;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.RepositoryUtils;
-import org.apache.maven.artifact.InvalidRepositoryException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -15,8 +14,6 @@ import org.apache.maven.project.ProjectDependenciesResolver;
 import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.graph.DependencyFilter;
-import org.eclipse.aether.graph.DependencyNode;
 import org.eclipse.aether.repository.LocalArtifactRequest;
 import org.eclipse.aether.repository.LocalArtifactResult;
 import org.eclipse.aether.repository.LocalRepositoryManager;
@@ -24,7 +21,6 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
