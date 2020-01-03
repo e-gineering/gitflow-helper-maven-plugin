@@ -16,7 +16,7 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 			verifier.addCliOption("-Dexpression=project.version");
 			verifier.executeGoal("help:evaluate");
 			
-			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-my-feature-branch-SNAPSHOT");
+			verifier.verifyTextInLog("Updating project com.e-gineering:gitflow-helper-maven-plugin-test-stub:5.0.0-SNAPSHOT to: 5.0.0+origin-feature-poc-my-feature-branch-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();
@@ -28,8 +28,8 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/my-feature-branch.with.other.identifiers", "5.0.1");
 		try {
 			verifier.executeGoal("initialize");
-
-			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-my-feature-branch.with.other.identifiers-SNAPSHOT");
+			
+			verifier.verifyTextInLog("Updating project com.e-gineering:gitflow-helper-maven-plugin-test-stub:5.0.1 to: 5.0.1+origin-feature-poc-my-feature-branch.with.other.identifiers-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();
@@ -55,8 +55,8 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/long-running", "2.0.0");
 		try {
 			verifier.executeGoal("deploy");
-
-			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-long-running-SNAPSHOT");
+			
+			verifier.verifyTextInLog("Updating project com.e-gineering:gitflow-helper-maven-plugin-test-stub:2.0.0 to: 2.0.0+origin-feature-poc-long-running-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();
@@ -70,7 +70,8 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 			verifier.getCliOptions().add("-Dplugin.stub.version=2.0.0+origin-feature-poc-long-running-SNAPSHOT");
 
 			verifier.executeGoal("deploy");
-			verifier.verifyTextInLog("Artifact versions updated with build metadata: -origin-feature-poc-long-running-SNAPSHOT");
+			// the alt project uses the `-` as the version delimiter, rather than `+`
+			verifier.verifyTextInLog("Updating project com.e-gineering:gitflow-helper-maven-plugin-test-stub-alt:2.0.0 to: 2.0.0-origin-feature-poc-long-running-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();
@@ -82,8 +83,7 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/reattach", "5.0.0-SNAPSHOT");
 		try {
 			verifier.executeGoal("deploy");
-
-			verifier.verifyTextInLog("Artifact versions updated with build metadata: +origin-feature-poc-reattach-SNAPSHOT");
+			verifier.verifyTextInLog("Updating project com.e-gineering:gitflow-helper-maven-plugin-test-stub:5.0.0-SNAPSHOT to: 5.0.0+origin-feature-poc-reattach-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();
@@ -92,6 +92,7 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 		verifier = createVerifier("/project-stub", "origin/feature/poc/reattach", "5.0.0-SNAPSHOT");
 		try {
 			verifier.executeGoals(Arrays.asList("validate", "gitflow-helper:attach-deployed"));
+			verifier.verifyTextInLog("Updating project com.e-gineering:gitflow-helper-maven-plugin-test-stub:5.0.0-SNAPSHOT to: 5.0.0+origin-feature-poc-reattach-SNAPSHOT");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();

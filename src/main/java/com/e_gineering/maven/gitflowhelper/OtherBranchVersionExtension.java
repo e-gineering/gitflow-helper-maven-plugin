@@ -11,7 +11,6 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.ReportPlugin;
-import org.apache.maven.model.io.ModelReader;
 import org.apache.maven.model.io.ModelWriter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
@@ -24,9 +23,6 @@ import java.util.Map;
 
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "other-branch-version")
 public class OtherBranchVersionExtension extends AbstractBranchDetectingExtension {
-    
-    @Requirement(role = ModelReader.class)
-    ModelReader modelReader;
     
     @Requirement(role = ModelWriter.class)
     ModelWriter modelWriter;

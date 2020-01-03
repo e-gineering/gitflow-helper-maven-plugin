@@ -37,8 +37,9 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 String otherBranchesToDeploy = resolveExpression(otherDeployBranchPattern);
 	            if (!"".equals(otherBranchesToDeploy) && gitBranchInfo.getName().matches(otherBranchesToDeploy)) {
                     setTargetSnapshots();
+                    // Only break if we set something!
+                    break;
                 }
-	            break;
             }
             default: {
                 unsetRepos();
