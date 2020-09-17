@@ -94,6 +94,9 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
                                             .setBaseDirectory(topLevelProject.getBasedir())
                                             .setReactorFailureBehavior(MavenExecutionRequest.REACTOR_FAIL_NEVER)
                                             .setUserProperties(session.getUserProperties())
+                                            .setMirrors(session.getRequest().getMirrors())
+                                            .setRemoteRepositories(session.getRequest().getRemoteRepositories())
+                                            .setPluginArtifactRepositories(session.getRequest().getPluginArtifactRepositories())
                                     ;
                             // The following user property on the nested execution prevents this extension to activate
                             // in the nested execution. This is needed, as the extension is not reentrant.
