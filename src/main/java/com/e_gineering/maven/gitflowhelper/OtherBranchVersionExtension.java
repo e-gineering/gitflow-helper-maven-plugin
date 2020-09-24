@@ -97,6 +97,8 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
                                             .setMirrors(session.getRequest().getMirrors())
                                             .setRemoteRepositories(session.getRequest().getRemoteRepositories())
                                             .setPluginArtifactRepositories(session.getRequest().getPluginArtifactRepositories())
+                                            .setServers(session.getRequest().getServers())
+                                            .setProxies(session.getRequest().getProxies())
                                     ;
                             // The following user property on the nested execution prevents this extension to activate
                             // in the nested execution. This is needed, as the extension is not reentrant.
