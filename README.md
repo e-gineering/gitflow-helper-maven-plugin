@@ -403,16 +403,16 @@ the artifacts built by the first job into a jboss application server.
 
 ## To Debug the plugin (replicating a test-case but without being run from jUnit)
 You can 'bootstrap' the plugin into your local repository and get the test project stubbed by running:
-`mvn -Dmaven.test.skip=true install` 
-
-Then, change directories:
-`cd target/test-classes/project-stub`
-
-From there, you'll need to supply the required environment variables or commandline arguments to `mvnDebug`:
 ```
+mvn process-test-classes
+mvn -Dmaven.test.skip=true install
+cd target/test-classes/project-stub`
 export GIT_BRANCH=origin/feature/mybranch-foo-bar
-mvnDebug -Dstub.project.version=5.0.0-SNAPSHOT -DotherBranchDeploy=semver -DallowGitflowPluginSnapshot=true  deploy
+mvnDebug -Dstub.project.version=5.0.0-SNAPSHOT -DallowGitflowPluginSnapshot=true  deploy
 ```
+This will get the test classes into the target directory and install the plugin into your local repository.
+Then you move to the proper stub directory, supply the environment variables and arguments to `mvnDebug`.
+
 You can then connect a remote debugger and step through the plugin code.
 
 ## Building with IntelliJ IDEA notes

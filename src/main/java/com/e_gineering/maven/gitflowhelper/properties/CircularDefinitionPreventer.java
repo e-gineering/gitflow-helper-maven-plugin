@@ -19,7 +19,11 @@ package com.e_gineering.maven.gitflowhelper.properties;
  * under the License.
  */
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Shamelessly cribbed from https://raw.githubusercontent.com/mojohaus/properties-maven-plugin/master/src/main/java/org/codehaus/mojo/properties/CircularDefinitionPreventer.java

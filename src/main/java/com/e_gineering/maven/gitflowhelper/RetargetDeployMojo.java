@@ -1,9 +1,5 @@
 package com.e_gineering.maven.gitflowhelper;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.InvalidRepositoryException;
-import org.apache.maven.artifact.versioning.VersionRange;
-import org.apache.maven.model.DeploymentRepository;
 import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -41,16 +37,7 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
                 String otherBranchesToDeploy = resolveExpression(otherDeployBranchPattern);
 	            if (!"".equals(otherBranchesToDeploy) && gitBranchInfo.getName().matches(otherBranchesToDeploy)) {
                     setTargetSnapshots();
-
-                    project.setVersion(getAsBranchSnapshotVersion(project.getVersion(), gitBranchInfo.getName()));
-
-                    // Update any attached artifacts.
-                    updateArtifactVersion(project.getArtifact(), gitBranchInfo.getName());
-                    for (Artifact a : project.getAttachedArtifacts()) {
-                        updateArtifactVersion(a, gitBranchInfo.getName());
-                    }
-
-                    getLog().info("Artifact versions updated with build metadata: " + getAsBranchSnapshotVersion("", gitBranchInfo.getName()));
+                    // Only break if we set something!
                     break;
                 }
             }
