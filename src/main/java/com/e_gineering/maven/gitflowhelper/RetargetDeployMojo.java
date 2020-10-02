@@ -68,7 +68,9 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
      */
     private void updateArtifactVersion(Artifact a, String branchName) {
         if (a != null) {
-            a.setVersion(getAsBranchSnapshotVersion(a.getVersion(), branchName));
+            String branchAsSnapshotVersion = getAsBranchSnapshotVersion(a.getVersion(), branchName);
+            getLog().info("Attempting to set version of " + a.getVersion() +  " based on: " + branchAsSnapshotVersion);
+            a.setVersion(branchAsSnapshotVersion);
             try {
                 a.setVersionRange(VersionRange.createFromVersion(a.getVersion()));
             } catch (UnsupportedOperationException uoe) { // Some artifact types don't like this.
@@ -87,7 +89,11 @@ public class RetargetDeployMojo extends AbstractGitflowBasedRepositoryMojo {
      * @return A mangled version string with the branchname and -SNAPSHOT.
      */
     private String getAsBranchSnapshotVersion(final String version, final String branchName) {
-        return version.replace("-SNAPSHOT", "") + otherBranchVersionDelimiter + branchName.replaceAll("[^0-9A-Za-z-.]", "-") + "-SNAPSHOT";
+        String branchNameSanitized = branchName.replaceAll("[^0-9A-Za-z-.]", "-") + "-SNAPSHOT";
+        if(version.endsWith(branchNameSanitized)) {
+            return version;
+        }
+        return version.replace("-SNAPSHOT", "") + otherBranchVersionDelimiter + branchNameSanitized;
     }
 
     private void setTargetSnapshots() throws MojoExecutionException, MojoFailureException {
