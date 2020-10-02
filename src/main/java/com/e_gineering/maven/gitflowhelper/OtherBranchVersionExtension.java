@@ -218,14 +218,18 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
     
     /**
      * Given a String version (which may be a final or -SNAPSHOT version) return a
-     * version version string mangled to include a `+normalized-branch-name-SNAPSHOT format version.
+     * version string mangled to include a `+normalized-branch-name-SNAPSHOT format version.
      *
      * @param version The base version (ie, 1.0.2-SNAPSHOT)
      * @param branchName to be normalized
      * @return A mangled version string with the branchname and -SNAPSHOT.
      */
     private String getAsBranchSnapshotVersion(final String version, final String branchName) {
-        return version.replace("-SNAPSHOT", "") + otherBranchVersionDelimiter + branchName.replaceAll("[^0-9A-Za-z-.]", "-") + "-SNAPSHOT";
+        String branchNameSanitized = otherBranchVersionDelimiter + branchName.replaceAll("[^0-9A-Za-z-.]", "-") + "-SNAPSHOT";
+        if(version.endsWith(branchNameSanitized)) {
+            return version;
+        }
+        return version.replace("-SNAPSHOT", "") + branchNameSanitized;
     }
     
 }
