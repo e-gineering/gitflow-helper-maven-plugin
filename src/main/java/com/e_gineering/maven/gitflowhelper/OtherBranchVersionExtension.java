@@ -224,7 +224,7 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
      * @param branchName to be normalized
      * @return A mangled version string with the branchname and -SNAPSHOT.
      */
-    private String getAsBranchSnapshotVersion(final String version, final String branchName) {
+    public String getAsBranchSnapshotVersion(final String version, final String branchName) {
         String branchNameSanitized = otherBranchVersionDelimiter + branchName.replaceAll("[^0-9A-Za-z-.]", "-") + "-SNAPSHOT";
         if(version.endsWith(branchNameSanitized)) {
             return version;
