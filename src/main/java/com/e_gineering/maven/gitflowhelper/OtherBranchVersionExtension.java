@@ -16,6 +16,7 @@ import org.apache.maven.model.Parent;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.ReportPlugin;
 import org.apache.maven.model.io.ModelWriter;
+import org.apache.maven.plugin.LegacySupport;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
@@ -34,6 +35,9 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
 
     @Requirement(role = Maven.class)
     Maven maven;
+
+    @Requirement(role = LegacySupport.class)
+    LegacySupport legacySupport;
     
     private static final int ORIGINAL_VERSION_IDX = 0;
     private static final int ADJUSTED_VERSION_IDX = 1;
@@ -106,7 +110,16 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
 
                             // Perform the nested Maven execution, and grab the list of *all* projects (ie modules of the
                             // multi-module build).
-                            final MavenExecutionResult mavenExecutionResult = maven.execute(request);
+                            final MavenExecutionResult mavenExecutionResult;
+                            try {
+                                mavenExecutionResult = maven.execute(request);
+                            } finally {
+                                // The additional Maven execution uses a new session, and at the end of the execution
+                                // clears the Session object in LegacySupport. This may break other plugins/uses of
+                                // LegacySupport; therefore always restore the session *after* the additional Maven
+                                // execution.
+                                legacySupport.setSession(session);
+                            }
                             final List<MavenProject> topologicallySortedProjects = mavenExecutionResult.getTopologicallySortedProjects();
 
                             // Iterate over these modules and process the 'new' ones just as the modules that are part
