@@ -91,18 +91,14 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
 
                             logger.info("Found top level project, but outside reactor: " + topLevelProject.getGroupId() + ":" + topLevelProject.getArtifactId() + " (" + topLevelProject.getFile() + ")");
 
-                            // Initialization of the nested Maven execution
-                            final MavenExecutionRequest request = new DefaultMavenExecutionRequest()
-                                            .setLocalRepository(session.getLocalRepository())
-                                            .setPom(topLevelProject.getFile())
-                                            .setBaseDirectory(topLevelProject.getBasedir())
-                                            .setReactorFailureBehavior(MavenExecutionRequest.REACTOR_FAIL_NEVER)
-                                            .setUserProperties(session.getUserProperties())
-                                            .setMirrors(session.getRequest().getMirrors())
-                                            .setRemoteRepositories(session.getRequest().getRemoteRepositories())
-                                            .setPluginArtifactRepositories(session.getRequest().getPluginArtifactRepositories())
-                                            .setServers(session.getRequest().getServers())
-                                            .setProxies(session.getRequest().getProxies())
+                            // Initialization of the nested Maven execution, based on the current session's request
+                            final MavenExecutionRequest request = DefaultMavenExecutionRequest.copy(session.getRequest())
+                                    .setExecutionListener(null) /* Disable the observer of the outer maven session */
+                                    .setTransferListener(null) /* Disable the observer of the outer maven session */
+                                    .setGoals(null) /* Disable the goals used to execute the outer maven session */
+                                    .setReactorFailureBehavior(MavenExecutionRequest.REACTOR_FAIL_NEVER)
+                                    .setPom(topLevelProject.getFile()) /* Use the pom file of the top-level project */
+                                    .setBaseDirectory(topLevelProject.getBasedir()) /* Use the basedir of the top-level project */
                                     ;
                             // The following user property on the nested execution prevents this extension to activate
                             // in the nested execution. This is needed, as the extension is not reentrant.
