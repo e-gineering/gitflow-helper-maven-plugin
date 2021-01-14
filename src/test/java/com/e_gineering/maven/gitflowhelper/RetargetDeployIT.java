@@ -123,7 +123,6 @@ public class RetargetDeployIT extends AbstractIntegrationTest {
 
 	@Test
 	public void othersUnsetRepos() throws Exception {
-		// Deploy a hotfix to the test-releases.
 		Verifier verifier = createVerifier("/project-stub", "feature/undeployable", "3.5.0-SNAPSHOT");
 		try {
 			verifier.executeGoal("deploy");
