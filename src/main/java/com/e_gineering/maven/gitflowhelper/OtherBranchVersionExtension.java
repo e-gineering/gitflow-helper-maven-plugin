@@ -2,9 +2,13 @@ package com.e_gineering.maven.gitflowhelper;
 
 import com.e_gineering.maven.gitflowhelper.properties.PropertyResolver;
 import org.apache.maven.AbstractMavenLifecycleParticipant;
+import org.apache.maven.Maven;
 import org.apache.maven.MavenExecutionException;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.versioning.VersionRange;
+import org.apache.maven.execution.DefaultMavenExecutionRequest;
+import org.apache.maven.execution.MavenExecutionRequest;
+import org.apache.maven.execution.MavenExecutionResult;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -12,6 +16,7 @@ import org.apache.maven.model.Parent;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.ReportPlugin;
 import org.apache.maven.model.io.ModelWriter;
+import org.apache.maven.plugin.LegacySupport;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 import org.codehaus.plexus.component.annotations.Requirement;
@@ -19,6 +24,7 @@ import org.codehaus.plexus.component.annotations.Requirement;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "other-branch-version")
@@ -26,6 +32,12 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
     
     @Requirement(role = ModelWriter.class)
     ModelWriter modelWriter;
+
+    @Requirement(role = Maven.class)
+    Maven maven;
+
+    @Requirement(role = LegacySupport.class)
+    LegacySupport legacySupport;
     
     private static final int ORIGINAL_VERSION_IDX = 0;
     private static final int ADJUSTED_VERSION_IDX = 1;
@@ -33,7 +45,11 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
     @Override
     public void afterProjectsRead(final MavenSession session) throws MavenExecutionException {
         super.afterProjectsRead(session);
-        
+
+        if (session.getUserProperties().containsKey("gitflow.skip.extension")) {
+            return;
+        }
+
         if (pluginFound) {
             logger.debug("other-branch-version extension active.");
             if (branchInfo != null) {
@@ -62,7 +78,60 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
                                 project.getArtifact().setVersionRange(VersionRange.createFromVersion(newVersion));
                             }
                         }
-                        
+
+                        final MavenProject topLevelProjectInsideReactor = session.getTopLevelProject();
+                        final MavenProject topLevelProject = findTopLevelProject(topLevelProjectInsideReactor);
+                        logger.info("Top level project: " + topLevelProjectInsideReactor.getGroupId() + ":" + topLevelProjectInsideReactor.getArtifactId());
+                        if (!topLevelProjectInsideReactor.equals(topLevelProject)) {
+                            // When only the partial tree of modules is being built, not all modules could be indexed
+                            // into the cross-walk map. In order to deal with dependencies to modules outside the reactor,
+                            // Another Maven execution is performed on the 'actual' top level project. This allows the
+                            // cross-walk map to be completed with the modules that *are* part of the multi-module project,
+                            // but are currently not part of the reactor.
+
+                            logger.info("Found top level project, but outside reactor: " + topLevelProject.getGroupId() + ":" + topLevelProject.getArtifactId() + " (" + topLevelProject.getFile() + ")");
+
+                            // Initialization of the nested Maven execution, based on the current session's request
+                            final MavenExecutionRequest request = DefaultMavenExecutionRequest.copy(session.getRequest())
+                                    .setExecutionListener(null) /* Disable the observer of the outer maven session */
+                                    .setTransferListener(null) /* Disable the observer of the outer maven session */
+                                    .setGoals(null) /* Disable the goals used to execute the outer maven session */
+                                    .setReactorFailureBehavior(MavenExecutionRequest.REACTOR_FAIL_NEVER)
+                                    .setPom(topLevelProject.getFile()) /* Use the pom file of the top-level project */
+                                    .setBaseDirectory(topLevelProject.getBasedir()) /* Use the basedir of the top-level project */
+                                    ;
+                            // The following user property on the nested execution prevents this extension to activate
+                            // in the nested execution. This is needed, as the extension is not reentrant.
+                            request.getUserProperties().put("gitflow.skip.extension", true);
+
+                            // Perform the nested Maven execution, and grab the list of *all* projects (ie modules of the
+                            // multi-module build).
+                            final MavenExecutionResult mavenExecutionResult;
+                            try {
+                                mavenExecutionResult = maven.execute(request);
+                            } finally {
+                                // The additional Maven execution uses a new session, and at the end of the execution
+                                // clears the Session object in LegacySupport. This may break other plugins/uses of
+                                // LegacySupport; therefore always restore the session *after* the additional Maven
+                                // execution.
+                                legacySupport.setSession(session);
+                            }
+                            final List<MavenProject> topologicallySortedProjects = mavenExecutionResult.getTopologicallySortedProjects();
+
+                            // Iterate over these modules and process the 'new' ones just as the modules that are part
+                            // of the reactor.
+                            for (MavenProject parsedProject : topologicallySortedProjects) {
+                                if (adjustedVersions.containsKey(parsedProject)) {
+                                    logger.info("Skipping " + parsedProject.getGroupId() + ":" + parsedProject.getArtifactId() + ": already part of reactor");
+                                } else {
+                                    String originalVersion = PropertyResolver.resolveValue(parsedProject.getVersion(), parsedProject.getProperties(), systemEnvVars);
+                                    String newVersion = getAsBranchSnapshotVersion(originalVersion, branchInfo.getName());
+                                    adjustedVersions.put(parsedProject, new String[]{originalVersion, newVersion});
+                                    logger.info("Updating outside-reactor project " + parsedProject.getGroupId() + ":" + parsedProject.getArtifactId() + ":" + originalVersion + " to: " + newVersion);
+                                }
+                            }
+                        }
+
                         // Once we have that populated, refilter the adjusted projects models
                         // updating dependencies on both the in-memory effective model, and the original pom.xml model.
                         for (Map.Entry<MavenProject, String[]> adjustedProject : adjustedVersions.entrySet()) {
@@ -94,6 +163,16 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
         }
         
         logger.info("Continuing execution....");
+    }
+
+    private MavenProject findTopLevelProject(MavenProject mavenProject) {
+        MavenProject parent = mavenProject;
+
+        while (parent.getParentFile() != null) {
+            parent = parent.getParent();
+        }
+
+        return parent;
     }
 
     private void updateProjectModel(final MavenProject projectContext, final Model model, final String[] versions, final Map<MavenProject, String[]> adjustedVersions) {

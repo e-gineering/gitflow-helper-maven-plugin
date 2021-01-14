@@ -98,4 +98,48 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 			verifier.resetStreams();
 		}
 	}
+
+	@Test
+	public void buildMultiModuleProject() throws Exception {
+		Verifier verifier = createVerifier("/multi-module-project-stub", "origin/feature/poc/test-partial-multi-module", "5.0.0-SNAPSHOT");
+		try {
+			verifier.executeGoal("install");
+
+			// Verify that all 3 maven projects that are part of the multi-module build are recognized
+			verifier.verifyTextInLog("Updating project com.e-gineering:gitflow-helper-maven-plugin-multi-module-parent-stub:5.0.0-SNAPSHOT to: 5.0.0+origin-feature-poc-test-partial-multi-module-SNAPSHOT");
+			verifier.verifyTextInLog("Updating project com.e-gineering:gitflow-helper-maven-plugin-multi-module-child1-stub:5.0.0-SNAPSHOT to: 5.0.0+origin-feature-poc-test-partial-multi-module-SNAPSHOT");
+			verifier.verifyTextInLog("Updating project com.e-gineering:gitflow-helper-maven-plugin-multi-module-child2-stub:5.0.0-SNAPSHOT to: 5.0.0+origin-feature-poc-test-partial-multi-module-SNAPSHOT");
+
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test
+	public void partialBuildMultiModuleProject() throws Exception {
+		// Partial builds of a multi-module project *must* be preceded by a full build
+		buildMultiModuleProject();
+
+		// After a full build, try to build module child2 in isolation
+		Verifier verifier = createVerifier("/multi-module-project-stub", "origin/feature/poc/test-partial-multi-module", "5.0.0-SNAPSHOT");
+		try {
+			// Only build module child2 (thus this being a partial build)
+			verifier.addCliOption("-pl child2");
+			verifier.executeGoal("install");
+
+			// Verify that the plugin detects that we are doing a partial build
+			verifier.verifyTextInLog("Found top level project, but outside reactor: com.e-gineering:gitflow-helper-maven-plugin-multi-module-parent-stub");
+
+			// Verify that the dependency to a module not part of the current build *is* being rewritten
+			verifier.verifyTextInLog("Updating outside-reactor project com.e-gineering:gitflow-helper-maven-plugin-multi-module-child1-stub:5.0.0-SNAPSHOT to: 5.0.0+origin-feature-poc-test-partial-multi-module-SNAPSHOT");
+
+			// Verify that the project that *is* part of the reactor is left alone in the construction of the cross-walk map.
+			verifier.verifyTextInLog("Skipping com.e-gineering:gitflow-helper-maven-plugin-multi-module-child2-stub: already part of reactor");
+
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+	}
 }
