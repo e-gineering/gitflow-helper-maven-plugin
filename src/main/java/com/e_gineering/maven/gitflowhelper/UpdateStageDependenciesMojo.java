@@ -2,6 +2,7 @@ package com.e_gineering.maven.gitflowhelper;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.RepositoryUtils;
+import org.apache.maven.artifact.InvalidRepositoryException;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
@@ -21,6 +22,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,8 +51,8 @@ public class UpdateStageDependenciesMojo extends AbstractGitflowBasedRepositoryM
         boolean itemsPurged = false;
 
         try {
-            DefaultDependencyResolutionRequest projectDepsRequest = new DefaultDependencyResolutionRequest(project, reresolveSession);
-            DependencyResolutionResult depencencyResult = dependenciesResolver.resolve(projectDepsRequest);
+            DependencyResolutionResult depencencyResult = dependenciesResolver.resolve(
+                    new DefaultDependencyResolutionRequest(project, reresolveSession));
 
             for (Dependency dependency : depencencyResult.getResolvedDependencies()) {
                 if (!dependency.getArtifact().isSnapshot()) {
