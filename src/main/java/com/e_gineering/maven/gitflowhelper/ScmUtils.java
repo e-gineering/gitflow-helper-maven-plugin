@@ -87,15 +87,41 @@ class ScmUtils {
     /**
      * Attempts to resolve the current branch of the build.
      */
-    public GitBranchInfo resolveBranchInfo(final String gitBranchExpression)
-    {
+    public GitBranchInfo resolveBranchInfo(final String gitBranchExpression) {
         // Start off with the name or expression provided from the config parameter.
         // Remember, the config parameter may be `null` (it is by default).
         String branchNameOrExpression = gitBranchExpression;
 
+        // Make sure we have a non-null value. (may have been passed in from the @Parameter)
+        if (branchNameOrExpression == null) {
+            log.debug("Git branch expression was null, defaulting to: " + DEFAULT_BRANCH_EXPRESSION);
+            branchNameOrExpression = DEFAULT_BRANCH_EXPRESSION;
+        }
 
+        // Now force it to resolve any properties.
+        String resolvedBranchName = PropertyResolver.resolveValue(branchNameOrExpression, project.getProperties(), systemEnvVars);
+
+        // It's possible that we were unable to expand all the properties.
+        // In this case we'll try reading the git branch name by invoking the git command.
+        ExpansionBuffer eb = new ExpansionBuffer(resolvedBranchName);
+        if (eb.hasMoreLegalPlaceholders()) {
+            resolvedBranchName = getBranchNameFromGit();
+            log.debug("Git branch expression couldn't be resolved, using branch name from git metadata: " + resolvedBranchName);
+        }
+
+        if (!branchNameOrExpression.equals(resolvedBranchName) || log.isDebugEnabled()) { // Resolves Issue #9
+            if (log.isDebugEnabled()) {
+                log.debug("Resolved gitBranchExpression: '" + gitBranchExpression + "' to '" + resolvedBranchName + "'");
+            }
+        }
+
+        return resolveBranchType(resolvedBranchName);
+    }
+
+    private String getBranchNameFromGit() {
         String connectionUrl = resolveUrlOrExpression(project);
 
+        String result = null;
         try {
             ScmRepository repository = scmManager.makeScmRepository(connectionUrl);
             if (!GitScmProviderRepository.PROTOCOL_GIT.equals(scmManager.getProviderByRepository(repository).getScmType())) {
@@ -109,7 +135,7 @@ class ScmUtils {
             ScmLogDispatcher scmLogger = new ScmLogDispatcher();
 
             try {
-                branchNameOrExpression = GitBranchCommand.getCurrentBranch(scmLogger, gitScmProviderRepository, fileSet);
+                result = GitBranchCommand.getCurrentBranch(scmLogger, gitScmProviderRepository, fileSet);
             } catch (ScmException scme) {
                 log.debug("Exception attempting to resolve a local branch. Attempting detached HEAD resolution");
 
@@ -153,7 +179,7 @@ class ScmUtils {
                 // Detached head resolution was successful.
                 // Either we iterated once, or all of the subsequent types were resolved to the same type as the
                 // first branch, and there was only one of those branches which may have been a uniquely versioned branch.
-                branchNameOrExpression = name;
+                result = name;
             }
         } catch (ScmException scme) {
             // Only do the following if the SCM resolution fails miserably.
@@ -161,27 +187,7 @@ class ScmUtils {
         } catch (IllegalArgumentException iae) {
             log.debug("IllegalArgumentException likely the result of the <scm> block missing from the pom.xml", iae);
         }
-
-        // Make sure we have a non-null value. (may have been passed in from the @Parameter)
-        if (branchNameOrExpression == null) {
-            branchNameOrExpression = DEFAULT_BRANCH_EXPRESSION;
-        }
-
-        // Now force it to resolve any properties.
-        String resolvedBranchName = PropertyResolver.resolveValue(branchNameOrExpression, project.getProperties(), systemEnvVars);
-
-        if (!branchNameOrExpression.equals(resolvedBranchName) || log.isDebugEnabled()) { // Resolves Issue #9
-            if (log.isDebugEnabled()) {
-                log.debug("Resolved gitBranchExpression: '" + gitBranchExpression + " to '" + resolvedBranchName + "'");
-            }
-        }
-        // It's possible that we were unable to expand all the properties.
-        ExpansionBuffer eb = new ExpansionBuffer(resolvedBranchName);
-        if (eb.hasMoreLegalPlaceholders()) {
-            resolvedBranchName = null; // Force it to resolve as UNDEFINED.
-        }
-
-        return resolveBranchType(resolvedBranchName);
+        return result;
     }
 
     private GitBranchInfo resolveBranchType(String branchName) {
