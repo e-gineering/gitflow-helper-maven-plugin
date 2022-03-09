@@ -9,8 +9,14 @@ import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.annotations.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Maven extension which removes (skips) undesired plugins from the build reactor when running on a master branch.
@@ -19,6 +25,15 @@ import java.util.List;
  */
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "promote-master")
 public class MasterPromoteExtension extends AbstractBranchDetectingExtension {
+
+    private static final Set<String> PLUGIN_WHITELIST = Collections.unmodifiableSet(
+            new HashSet<>(
+                    Arrays.asList(
+                            "org.apache.maven.plugins:maven-deploy-plugin",
+                            "com.e-gineering:gitflow-helper-maven-plugin"
+                    )
+            )
+    );
     
     @Override
     public void afterProjectsRead(final MavenSession session) throws MavenExecutionException {
@@ -41,26 +56,25 @@ public class MasterPromoteExtension extends AbstractBranchDetectingExtension {
         }
 
         // Build up a map of plugins to remove from projects, if we're on the master branch.
-        HashMap<MavenProject, List<Plugin>> pluginsToDrop = new HashMap<>();
+        Map<MavenProject, List<Plugin>> pluginsToDrop = new HashMap<>();
+
+        final List<String> configuredPluginsToRetain;
+        if (this.retainPlugins != null) {
+            configuredPluginsToRetain = this.retainPlugins;
+        } else {
+            configuredPluginsToRetain = Collections.emptyList();
+        }
 
         for (MavenProject project : session.getProjects()) {
-            List<Plugin> dropPlugins = new ArrayList<>();
 
-            for (Plugin plugin : project.getModel().getBuild().getPlugins()) {
-                // Don't drop our plugin.
-                if (plugin.getKey().equals("com.e-gineering:gitflow-helper-maven-plugin")) {
-                    continue;
-                // Don't drop things we declare goals for.
-                } else if (pluginsToRetain.contains(plugin)) {
-                    logger.debug("gitflow-helper-maven-plugin retaining plugin: " + plugin + " from project: " + project.getName());
-                // Don't drop the maven-deploy-plugin
-                } else if (plugin.getKey().equals("org.apache.maven.plugins:maven-deploy-plugin")) {
-                    logger.debug("gitflow-helper-maven-plugin retaining plugin: " + plugin + " from project: " + project.getName());
-                } else {
-                    logger.debug("gitflow-helper-maven-plugin removing plugin: " + plugin + " from project: " + project.getName());
-                    dropPlugins.add(plugin);
-                }
-            }
+            // Create a list of all plugins that are not in the whitelist, not explicitly invoked from the commandline,
+            // and not configured to be allowed on master/support.
+            List<Plugin> dropPlugins = project.getModel().getBuild().getPlugins()
+                    .stream()
+                    .filter(plugin -> !PLUGIN_WHITELIST.contains(plugin.getKey()))
+                    .filter(plugin -> !pluginsToRetain.contains(plugin))
+                    .filter(plugin -> !configuredPluginsToRetain.contains(plugin.getKey()))
+                    .collect(Collectors.toList());
 
             pluginsToDrop.put(project, dropPlugins);
         }

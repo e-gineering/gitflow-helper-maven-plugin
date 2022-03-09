@@ -4,6 +4,9 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+
+import java.util.List;
 
 /**
  * If the build is being executed from a DEVELOPMENT, HOTFIX or RELEASE branch, attach an artifact containing a list of
@@ -16,6 +19,15 @@ import org.apache.maven.plugins.annotations.Mojo;
  */
 @Mojo(name = "promote-master", defaultPhase = LifecyclePhase.INSTALL)
 public class PromoteMasterMojo extends AbstractGitflowBasedRepositoryMojo {
+
+    /**
+     * List of groupId:artifactId strings that refer to plugins that should be retained while building on master.
+     *
+     * Note that this property is listed here for documentation purposes, but it is handled within
+     * {@link MasterPromoteExtension}.
+     */
+    @Parameter(property = "retainPlugins")
+    private List<String> retainPlugins;
 
     @Override
     protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {

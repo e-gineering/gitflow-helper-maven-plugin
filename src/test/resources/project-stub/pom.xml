@@ -118,7 +118,42 @@
 				<version>4.2.0</version>
 				<extensions>true</extensions>
 			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>flatten-maven-plugin</artifactId>
+				<version>1.2.2</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>flatten</goal>
+						</goals>
+						<phase>process-resources</phase>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>retain-configuration</id>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>com.e-gineering</groupId>
+							<artifactId>gitflow-helper-maven-plugin</artifactId>
+							<version>${version.gitflow.plugin}</version>
+							<configuration>
+								<retainPlugins>
+									<retainPlugin>org.codehaus.mojo:flatten-maven-plugin</retainPlugin>
+								</retainPlugins>
+							</configuration>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
+		</profile>
+	</profiles>
 
 </project>
