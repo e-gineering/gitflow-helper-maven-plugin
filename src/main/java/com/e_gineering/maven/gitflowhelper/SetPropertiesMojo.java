@@ -5,6 +5,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.codehaus.plexus.util.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -121,6 +122,15 @@ public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
     private String keyPrefix = "";
 
 
+    @Parameter(property = "branchTypeProperty", defaultValue = "gitFlowBranchType")
+    private String branchTypeProperty = "gitFlowBranchType";
+
+    @Parameter(property = "branchNameProperty", defaultValue = "gitBranchName")
+    private String branchNameProperty = "gitBranchName";
+
+    @Parameter(property = "gitBranchNamePropertyMappers")
+    private PropertyMapper[] gitBranchNamePropertyMappers;
+
     @Override
     protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {
         Properties toInject = null;
@@ -184,6 +194,26 @@ public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
                 }
             }
             setProperties(toInject);
+        }
+
+        if(!StringUtils.isBlank(branchTypeProperty)) {
+            project.getProperties().setProperty(branchTypeProperty, gitBranchInfo.getType().name());
+        }
+        if(!StringUtils.isBlank(branchNameProperty)) {
+            project.getProperties().setProperty(branchNameProperty, gitBranchInfo.getName());
+        }
+
+        if(gitBranchNamePropertyMappers != null) {
+            for(PropertyMapper pm : gitBranchNamePropertyMappers)
+            {
+                String mappedValue = pm.map(gitBranchInfo.getName());
+                getLog().info("Mapper [" + pm.getId() + "] mapped git branchname [" + gitBranchInfo.getName() + "] to [" + mappedValue + "]");
+                if(StringUtils.isBlank(mappedValue)) {
+                    getLog().warn("Mapper " + pm.getId() + " Git branch name did not provide a value, ignoring it");
+                    continue;
+                }
+                project.getProperties().setProperty(pm.getPropertyName(), mappedValue);
+            }
         }
     }
 
