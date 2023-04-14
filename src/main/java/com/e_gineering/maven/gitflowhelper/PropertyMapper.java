@@ -8,6 +8,9 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.util.function.BiFunction;
 
+/**
+ * Helper for mapping the GIT branch name
+ */
 public class PropertyMapper
 {
     private String propertyName;
@@ -44,6 +47,12 @@ public class PropertyMapper
         this.mapper = mapper;
     }
 
+    /**
+     * Maps the Git branch name
+     * @param gitBranchInfo  the Git Info
+     * @return the mapped branch name
+     * @throws MojoExecutionException on error
+     */
     String map(GitBranchInfo gitBranchInfo) throws MojoExecutionException
     {
         if(StringUtils.isBlank(getPropertyName())) {
@@ -93,7 +102,6 @@ public class PropertyMapper
 
             Invocable inv = (Invocable) engine;
 
-            // invoke the function named "hello" with "Scripting!" as the argument
             Object ret = inv.invokeFunction("map", gitBranchInfo.getName(), gitBranchInfo.getType());
             if(ret == null) {
                 return null;
