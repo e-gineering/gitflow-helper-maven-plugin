@@ -177,6 +177,123 @@ from a property file during the build. Both property key names and property valu
 Multiple executions can be configured, and each execution can target different scopes (system or project), and can load
 properties from files with an assigned keyPrefix, letting you name-space properties from execution ids.
 
+## Goal: `set-git-properties` (Stores branch type and name in Maven properties)
+
+The goal `set-git-properties` sets in the Git branch type and name in Maven properties.
+The following properties are set:
+
+* `branchType`: The type of the branch
+* `branchName`: The name of the branch
+
+### Mapping Git branch name
+
+In certain situations it is necessary to sanitize the branch name (e.g. when using the branch name as tag for a docker image).
+For such purposes it is possible to the map the branch name and store the mapped value in an additional Maven property.
+
+### Mapping branch name with a java class
+
+The mapper can be implemented with a Java class that implements `java.util.function.BiFunction<String,String,String>`.
+* The first argument of the function is the branch name, the second argument is the branch type.
+* The result of the function is the mapped branch name.
+* The class has to be provided via a maven artifact as dependency of the plugin.
+* The `language` element has the value `java`.
+* The `propertyName` defines the name of the Maven property where the mapped branch name is stored.
+
+Example:
+```xml
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.e-gineering</groupId>
+                <artifactId>gitflow-helper-maven-plugin</artifactId>
+                <version>${gitflow.helper.plugin.version}</version>
+                <configuration>
+                    <branchNamePropertyMappers>
+                        <branchNamePropertyMapper>
+                            <propertyName>branchNameLowerCase</propertyName>
+                            <language>java</language>
+                            <mapper>com.example.BranchMapperToLowerCase</mapper>
+                        </branchNamePropertyMapper>
+                    </branchNamePropertyMappers>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>set-git-properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupdId>com.example</groupdId>
+                        <artifactId>branchNameMapper</artifactId>
+                        <version>1.0.0</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+        ...
+    </build>
+```
+The mapper class:
+```java
+package com.example;
+
+import java.util.function.BiFunction;
+
+public class BranchMapperToLowerCase implements BiFunction<String,String,String>
+{
+    public String apply(String branchName, String branchType)
+    {
+        return branchName.toLowerCase();
+    }
+}
+```
+
+### Mapping the branch name with a JSR223 scripting language
+
+The branch name mapping can also be implemented with a JSR232 scripting language.
+For this case the 
+
+* `language` is the name of the JSR232 scripting language (per default only `javascript` is possible. For additional  language can be provided by additional dependencies)
+* `mapper` contains the script that implements a function with map `map`. The first parameter of the function is the branch name, the second parameter is the branch type.
+* The return value of the script is the mapped branch name. It is stored in the property.
+* The Git branch name is stored in the variable `branchName` and the branch type is accessible via `branchType`
+
+**Example:** Mapper in javascript
+
+```xml
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.e-gineering</groupId>
+                <artifactId>gitflow-helper-maven-plugin</artifactId>
+                <version>${gitflow.helper.plugin.version}</version>
+                <configuration>
+                    <branchNamePropertyMappers>
+                        <branchNamePropertyMapper>
+                            <propertyName>branchNameLowerCase</propertyName>
+                            <language>javascript</language>
+                            <mapper>
+                                function map(branchName, branchType) {
+                                    return branchName.toLowerCase();
+                                }
+                            </mapper>
+                        </branchNamePropertyMapper>
+                    </branchNamePropertyMappers>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>set-git-properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        ...
+    </build>
+```
 
 ## Goal: `retarget-deploy` (Branch Specific Deploy Targets & Staging)
 

@@ -3,28 +3,16 @@ package com.e_gineering.maven.gitflowhelper;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.shared.utils.StringUtils;
 
-import javax.script.Bindings;
+import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 public class PropertyMapper
 {
-    private String id;
     private String propertyName;
     private String language = "java";
     private String mapper;
-
-    public String getId()
-    {
-        return id;
-    }
-
-    public void setId(final String id)
-    {
-        this.id = id;
-    }
 
     public String getLanguage()
     {
@@ -56,62 +44,65 @@ public class PropertyMapper
         this.mapper = mapper;
     }
 
-    String map(String propertyValue) throws MojoExecutionException
+    String map(GitBranchInfo gitBranchInfo) throws MojoExecutionException
     {
-        if(StringUtils.isBlank(getId())) {
-            throw new MojoExecutionException("Property mapper has no id");
+        if(StringUtils.isBlank(getPropertyName())) {
+            throw new MojoExecutionException("Mapper has not propertyName");
         }
         if(StringUtils.isBlank(getLanguage())) {
-            throw new MojoExecutionException("Property mapper with id [" + getId() + "] has no language");
+            throw new MojoExecutionException("Mapper for property [" + getPropertyName() + "] has no language");
         }
         if(StringUtils.isBlank(getMapper())) {
-            throw new MojoExecutionException("Property mapper with id [" + getId() + "] has no mapper");
+            throw new MojoExecutionException("Mapper for property [" + getPropertyName() + "] has no mapper");
         }
         if("java".equalsIgnoreCase(language)) {
 
             Class<?> mapperClass;
             try
             {
-                mapperClass = Class.forName(mapper);
+                mapperClass = Class.forName(mapper.trim());
             }
             catch(ClassNotFoundException e)
             {
-                throw new MojoExecutionException("Error in property mapper with id [" + getId() + "]: class " + mapper + " not found", e);
+                throw new MojoExecutionException("Error in mapper for property [" + getPropertyName() + "]: class " + mapper + " not found", e);
             }
 
-            if(!Function.class.isAssignableFrom(mapperClass)) {
-                throw new MojoExecutionException("Error in property mapper with id [" + getId() + "]: class " + mapper + " does not implement " + Function.class.getName());
+            if(!BiFunction.class.isAssignableFrom(mapperClass)) {
+                throw new MojoExecutionException("Error in mapper for property [" + getPropertyName() + "]: class " + mapper + " does not implement " + BiFunction.class.getName());
             }
 
             try
             {
                 @SuppressWarnings("unchecked")
-                Function<String,String> function = (Function<String, String>)Class.forName(mapper).newInstance();
-                return function.apply(propertyValue);
+                BiFunction<String,String,String> function = (BiFunction<String,String,String>)Class.forName(mapper).newInstance();
+                return function.apply(gitBranchInfo.getName(), gitBranchInfo.getType().name());
             }
             catch(Exception e)
             {
-                throw new MojoExecutionException("Error in property mapper with id [" + getId() + "]", e);
+                throw new MojoExecutionException("Error in mapper for property [" + getPropertyName() + "]", e);
             }
         }
         ScriptEngineManager mgr = new ScriptEngineManager();
         ScriptEngine engine = mgr.getEngineByName(language);
         if(engine == null) {
-            throw new MojoExecutionException("Property mapper with id [" + getId() + "] has an unsupported language [" + language + "]");
+            throw new MojoExecutionException("Property mapper for property [" + getPropertyName() + "] has an unsupported language [" + language + "]");
         }
         try
         {
-            Bindings bindings = engine.createBindings();
-            bindings.put("propertyValue", propertyValue);
-            Object ret = engine.eval(mapper, bindings);
+            engine.eval(mapper);
+
+            Invocable inv = (Invocable) engine;
+
+            // invoke the function named "hello" with "Scripting!" as the argument
+            Object ret = inv.invokeFunction("map", gitBranchInfo.getName(), gitBranchInfo.getType());
             if(ret == null) {
                 return null;
             }
             return String.valueOf(ret);
         }
-        catch(ScriptException e)
+        catch(Exception e)
         {
-            throw new MojoExecutionException("Error in property mapper with id " + getId(), e);
+            throw new MojoExecutionException("Error in property mapper for property [" + getPropertyName()+ "]", e);
         }
     }
 

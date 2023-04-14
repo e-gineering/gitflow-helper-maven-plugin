@@ -10,7 +10,7 @@ import org.codehaus.plexus.util.StringUtils;
 /**
  * Stores the branch type and the git branch in Maven properties
  */
-@Mojo(name = "set-git-info-properties", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
+@Mojo(name = "set-git-properties", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class SetGitPropertiesMojo extends AbstractGitflowBranchMojo
 {
     /**
@@ -20,14 +20,14 @@ public class SetGitPropertiesMojo extends AbstractGitflowBranchMojo
     private String branchTypeProperty = "branchType";
 
     /**
-     * Defines the name of the property where the Git branch name is stored
+     * Defines the name of the property where the Git branch name is stored.
      */
     @Parameter(property = "branchNameProperty", defaultValue = "gitBranchName")
     private String branchNameProperty = "branchName";
 
     /**
      * Der branchNamePropertyMapper allows to store the Git branch name
-     * into additional properties.
+     * into additional properties.<br>
      * The branchName can be mapped by a java class, or an JSR223 scripting language
      */
     @Parameter(property = "branchNamePropertyMappers")
@@ -46,10 +46,10 @@ public class SetGitPropertiesMojo extends AbstractGitflowBranchMojo
         if(branchNamePropertyMappers != null) {
             for(PropertyMapper pm : branchNamePropertyMappers)
             {
-                String mappedValue = pm.map(gitBranchInfo.getName());
-                getLog().info("Mapper [" + pm.getId() + "] mapped git branch name [" + gitBranchInfo.getName() + "] to [" + mappedValue + "]");
+                String mappedValue = pm.map(gitBranchInfo);
+                getLog().info("Mapper  [" + pm.getPropertyName() + "] mapped Git branch name [" + gitBranchInfo.getName() + "] to [" + mappedValue + "]");
                 if(StringUtils.isBlank(mappedValue)) {
-                    getLog().warn("Mapper " + pm.getId() + " Git branch name did not provide a value, ignoring it");
+                    getLog().warn("Mapper for property [" + pm.getPropertyName() + "] did not provide a value, ignoring it");
                     continue;
                 }
                 project.getProperties().setProperty(pm.getPropertyName(), mappedValue);
