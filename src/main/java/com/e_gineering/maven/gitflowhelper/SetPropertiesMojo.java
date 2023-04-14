@@ -121,15 +121,25 @@ public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
     @Parameter(property = "keyPrefix", defaultValue = "")
     private String keyPrefix = "";
 
-
+    /**
+     * Defines the name of the property where the branch type is stored
+     */
     @Parameter(property = "branchTypeProperty", defaultValue = "gitFlowBranchType")
-    private String branchTypeProperty = "gitFlowBranchType";
+    private String branchTypeProperty = "branchType";
 
+    /**
+     * Defines the name of the property where the Git branch name is stored
+     */
     @Parameter(property = "branchNameProperty", defaultValue = "gitBranchName")
-    private String branchNameProperty = "gitBranchName";
+    private String branchNameProperty = "branchName";
 
-    @Parameter(property = "gitBranchNamePropertyMappers")
-    private PropertyMapper[] gitBranchNamePropertyMappers;
+    /**
+     * Der branchNamePropertyMapper allows to store the Git branch name
+     * into additional properties.
+     * The branchName can be mapped by a java class, or an JSR223 scripting language
+     */
+    @Parameter(property = "branchNamePropertyMappers")
+    private PropertyMapper[] branchNamePropertyMappers;
 
     @Override
     protected void execute(final GitBranchInfo gitBranchInfo) throws MojoExecutionException, MojoFailureException {
@@ -203,11 +213,11 @@ public class SetPropertiesMojo extends AbstractGitflowBranchMojo {
             project.getProperties().setProperty(branchNameProperty, gitBranchInfo.getName());
         }
 
-        if(gitBranchNamePropertyMappers != null) {
-            for(PropertyMapper pm : gitBranchNamePropertyMappers)
+        if(branchNamePropertyMappers != null) {
+            for(PropertyMapper pm : branchNamePropertyMappers)
             {
                 String mappedValue = pm.map(gitBranchInfo.getName());
-                getLog().info("Mapper [" + pm.getId() + "] mapped git branchname [" + gitBranchInfo.getName() + "] to [" + mappedValue + "]");
+                getLog().info("Mapper [" + pm.getId() + "] mapped git branch name [" + gitBranchInfo.getName() + "] to [" + mappedValue + "]");
                 if(StringUtils.isBlank(mappedValue)) {
                     getLog().warn("Mapper " + pm.getId() + " Git branch name did not provide a value, ignoring it");
                     continue;
