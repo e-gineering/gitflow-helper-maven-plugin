@@ -1,5 +1,6 @@
 package com.e_gineering.maven.gitflowhelper;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import org.apache.maven.RepositoryUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.artifact.repository.ArtifactRepository;
@@ -37,8 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Common configuration and plumbing (support methods) for Repository operations on Gitflow Mojo.
@@ -80,7 +79,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
     
     @Component
     private MavenProjectHelper projectHelper;
-    
+
     /**
      * Creates a Maven ArtifactRepository for targeting deployments.
      *
@@ -91,12 +90,18 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
      */
     ArtifactRepository getDeploymentRepository(final String id) throws MojoFailureException {
         Objects.requireNonNull(id, "A repository id must be specified.");
-        Optional<ArtifactRepository> repo = project.getRemoteArtifactRepositories().stream().filter(r -> r.getId().equals(id)).findFirst();
 
-        if (!repo.isPresent()) {
-            throw new MojoFailureException("No Repository with id `" + id + "` is defined.");
+        Optional<ArtifactRepository> repo = project.getRemoteArtifactRepositories().stream().filter(r -> r.getId().equals(id)).findFirst();
+        if (repo.isPresent()) {
+            return repo.get();
         }
-        return repo.get();
+
+        Optional<ArtifactRepository> mirroredRepo = project.getRemoteArtifactRepositories().stream()
+                .flatMap(r -> r.getMirroredRepositories().stream()).filter(r -> r.getId().equals(id)).findFirst();
+        if(mirroredRepo.isPresent()) {
+            return mirroredRepo.get();
+        }
+        throw new MojoFailureException("No Repository with id `" + id + "` is defined.");
     }
 
     /**
