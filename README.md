@@ -449,8 +449,8 @@ directly from master**. Rather, master is really only used for tracking releases
 To accomplish this the `promote-master` goal and a Maven build extension work together.
 
 With the build extension added to your project, any build where the `gitBranchExpression` matches the `masterBranchPattern` or `supportBranchPattern` will have it's
-build lifecycle (plugins, goals, etc) altered. Any plugin other than the gitflow-helper-maven-plugin, the maven-deploy-plugin, or plugins with goals
- explicitly referenced on the command line will be ignored (removed from the project reactor). 
+build lifecycle (plugins, goals, etc) altered. Any plugin other than the gitflow-helper-maven-plugin, the maven-deploy-plugin, plugins with goals
+ explicitly referenced on the command line or those configured explicitly in the `retainPlugins` list, will be ignored (removed from the project reactor). 
 This allows us to enforce the ideal that code should never be built in the master branch.
 
 The `promote-master` goal executes when the `gitBranchExpression` resolves to a value matching the `masterBranchPattern` or `supportBranchPattern` regular expression.

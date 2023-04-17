@@ -71,6 +71,16 @@ public class MasterSupportBranchIT extends AbstractIntegrationTest {
 				// Otherwise, it's the VerificationException from looking for "Compiling", and that's expected to fail.
 			}
 
+			try {
+				// The flatten-maven-plugin should not activate, fail if it does.
+				verifier.verifyTextInLog("Generating flattened POM of project");
+				throw new VerificationException(PROMOTION_FAILED_MESSAGE);
+			} catch (VerificationException ve) {
+				if (ve.getMessage().equals(PROMOTION_FAILED_MESSAGE)) {
+					throw ve;
+				}
+			}
+
 			verifier.verifyTextInLog(
 				"gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [origin/master] matches masterBranchPattern");
 			verifier.verifyTextInLog("[INFO] Setting release artifact repository to: [releases]");
@@ -116,6 +126,48 @@ public class MasterSupportBranchIT extends AbstractIntegrationTest {
 			verifier.verifyTextInLog("[INFO] Setting release artifact repository to: [releases]");
 			verifier.verifyTextInLog(
 				"[INFO] Resolving & Reattaching existing artifacts from stageDeploymentRepository [test-releases");
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test
+	public void dontPruneExplicitlyConfiguredPlugins() throws Exception {
+		// Create a release version and get it deployed.
+		Verifier verifier = createVerifier("/project-stub", "origin/release/1.2.0", "1.2.0");
+
+		try {
+			verifier.executeGoal("deploy");
+
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+
+		// Promote (deploy) from /origin/master
+		verifier = createVerifier("/project-stub", "origin/master", "1.2.0");
+		// Activate a profile to enable the retainPlugins configuration
+		verifier.addCliOption("-Pretain-configuration");
+		try {
+			verifier.executeGoal("deploy");
+
+			try {
+				verifier.verifyTextInLog("Compiling");
+				throw new VerificationException(PROMOTION_FAILED_MESSAGE);
+			} catch (VerificationException ve) {
+				if (ve.getMessage().equals(PROMOTION_FAILED_MESSAGE)) {
+					throw ve;
+				}
+				// Otherwise, it's the VerificationException from looking for "Compiling", and that's expected to fail.
+			}
+
+			verifier.verifyTextInLog("Generating flattened POM of project"); // This should still be there.
+			verifier.verifyTextInLog(
+					"gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [origin/master] matches masterBranchPattern");
+			verifier.verifyTextInLog("[INFO] Setting release artifact repository to: [releases]");
+			verifier.verifyTextInLog(
+					"[INFO] Resolving & Reattaching existing artifacts from stageDeploymentRepository [test-releases");
 			verifier.verifyErrorFreeLog();
 		} finally {
 			verifier.resetStreams();

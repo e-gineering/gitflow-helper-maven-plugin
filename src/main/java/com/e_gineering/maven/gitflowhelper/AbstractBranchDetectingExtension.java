@@ -13,6 +13,8 @@ import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 public abstract class AbstractBranchDetectingExtension extends AbstractMavenLifecycleParticipant {
@@ -34,6 +36,7 @@ public abstract class AbstractBranchDetectingExtension extends AbstractMavenLife
     String featureOrBugfixBranchPattern;
     String otherDeployBranchPattern;
     String otherBranchVersionDelimiter;
+    List<String> retainPlugins;
     GitBranchInfo branchInfo;
     Properties systemEnvVars;
     
@@ -93,6 +96,10 @@ public abstract class AbstractBranchDetectingExtension extends AbstractMavenLife
                     if (gitBranchExpression == null) {
                         gitBranchExpression = extractPluginConfigValue("gitBranchExpression", plugin);
                     }
+
+                    if (retainPlugins == null) {
+                        retainPlugins = extractPluginConfigList("retainPlugins", plugin);
+                    }
                 }
             }
         }
@@ -145,6 +152,10 @@ public abstract class AbstractBranchDetectingExtension extends AbstractMavenLife
                 logger.debug("Using default otherBranchVersionDelimiter.");
                 otherBranchVersionDelimiter = "+";
             }
+
+            if (retainPlugins == null) {
+                logger.debug("No additional plugin executions will be retained on master");
+            }
             
             ScmUtils scmUtils = new ScmUtils(systemEnvVars, scmManager, session.getTopLevelProject(), new PlexusLoggerToMavenLog(logger), masterBranchPattern, supportBranchPattern, releaseBranchPattern, hotfixBranchPattern, developmentBranchPattern);
             branchInfo = scmUtils.resolveBranchInfo(gitBranchExpression);
@@ -164,6 +175,27 @@ public abstract class AbstractBranchDetectingExtension extends AbstractMavenLife
     private String extractConfigValue(String parameter, Object configuration) {
         try {
             return ((Xpp3Dom) configuration).getChild(parameter).getValue();
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private List<String> extractPluginConfigList(String parameter, Plugin plugin) {
+        List<String> value = extractConfigList(parameter, plugin.getConfiguration());
+        for (int i = 0; i < plugin.getExecutions().size() && value == null; i++) {
+            value = extractConfigList(parameter, plugin.getExecutions().get(i).getConfiguration());
+        }
+        return value;
+    }
+
+    private List<String> extractConfigList(String parameter, Object configuration) {
+        try {
+            List<String> result = new ArrayList<>();
+            Xpp3Dom parameterNode = ((Xpp3Dom) configuration).getChild(parameter);
+            for (int i = 0; i < parameterNode.getChildCount(); i++) {
+                result.add(parameterNode.getChild(i).getValue());
+            }
+            return result;
         } catch (Exception ignored) {
         }
         return null;
