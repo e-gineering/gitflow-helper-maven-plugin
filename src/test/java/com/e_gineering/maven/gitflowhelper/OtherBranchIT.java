@@ -5,7 +5,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
+import java.io.File;
 import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(BlockJUnit4ClassRunner.class)
 public class OtherBranchIT extends AbstractIntegrationTest {
@@ -136,6 +140,60 @@ public class OtherBranchIT extends AbstractIntegrationTest {
 
 			// Verify that the project that *is* part of the reactor is left alone in the construction of the cross-walk map.
 			verifier.verifyTextInLog("Skipping com.e-gineering:gitflow-helper-maven-plugin-multi-module-child2-stub: already part of reactor");
+
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test
+	public void onlyWriteGitflowMassagedPomFileIfNeeded() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/gitflow-massaged-write-only-on-change", "5.0.0-SNAPSHOT");
+		verifier.setMavenDebug(true);
+		final File massagedPomFile = new File(verifier.getBasedir(), "pom-gitflow-massaged.xml");
+
+		try {
+			// First execution: should write the massaged pom file
+			verifier.executeGoal("validate");
+			verifier.verifyTextInLog("Writing rewritten model to " + massagedPomFile.getAbsolutePath());
+
+			assertTrue(massagedPomFile.exists());
+
+			final long lastModified = massagedPomFile.lastModified();
+
+			// Second execution: should leave the massaged pom file untouched.
+			verifier.executeGoal("validate");
+			verifier.verifyTextInLog("Existing massaged pom file " + massagedPomFile.getAbsolutePath() + " already correct, using it as is.");
+
+			assertTrue(massagedPomFile.exists());
+			assertEquals(lastModified, massagedPomFile.lastModified());
+
+			verifier.verifyErrorFreeLog();
+		} finally {
+			verifier.resetStreams();
+		}
+	}
+
+	@Test
+	public void loadGitflowMassagedPomDirectly() throws Exception {
+		Verifier verifier = createVerifier("/project-stub", "origin/feature/poc/load-gitflow-massaged-directly", "5.0.0-SNAPSHOT");
+		verifier.setMavenDebug(true);
+		final File massagedPomFile = new File(verifier.getBasedir(), "pom-gitflow-massaged.xml");
+
+		try {
+			// First execution: should write the massaged pom file
+			verifier.executeGoal("validate");
+			verifier.verifyTextInLog("Writing rewritten model to " + massagedPomFile.getAbsolutePath());
+
+			assertTrue(massagedPomFile.exists());
+
+			// Second execution, directly loading the gitflow massaged POM file, which is should be a trigger for the other branch
+			// extension *not* to activate
+			verifier.addCliOption("-f pom-gitflow-massaged.xml");
+
+			verifier.executeGoal("validate");
+			verifier.verifyTextInLog("Project MavenProject: com.e-gineering:gitflow-helper-maven-plugin-test-stub:5.0.0+origin-feature-poc-load-gitflow-massaged-directly-SNAPSHOT @ " + massagedPomFile.getAbsolutePath() + " already rewritten");
 
 			verifier.verifyErrorFreeLog();
 		} finally {
