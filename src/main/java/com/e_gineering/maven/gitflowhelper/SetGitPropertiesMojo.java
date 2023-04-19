@@ -47,11 +47,7 @@ public class SetGitPropertiesMojo extends AbstractGitflowBranchMojo
             for(PropertyMapper pm : branchNamePropertyMappers)
             {
                 String mappedValue = pm.map(gitBranchInfo);
-                getLog().info("Mapper  [" + pm.getPropertyName() + "] mapped Git branch name [" + gitBranchInfo.getName() + "] to [" + mappedValue + "]");
-                if(StringUtils.isBlank(mappedValue)) {
-                    getLog().warn("Mapper for property [" + pm.getPropertyName() + "] did not provide a value, ignoring it");
-                    continue;
-                }
+                getLog().info("Mapped Git branch name [" + gitBranchInfo.getName() + "] for property [" + pm.getPropertyName() +"] to [" + mappedValue + "]");
                 project.getProperties().setProperty(pm.getPropertyName(), mappedValue);
             }
         }
