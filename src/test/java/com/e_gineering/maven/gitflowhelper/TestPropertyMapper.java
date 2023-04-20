@@ -31,7 +31,6 @@ public class TestPropertyMapper
     }
 
     /**
-     * Tests the methode {@link PropertyMapper#map(GitBranchInfo)} with a Javascript Mapper
      * Tests the methode {@link PropertyMapper#map(GitBranchInfo)} with a Groovy Mapper
      * @throws MojoExecutionException on error
      */
@@ -58,13 +57,13 @@ public class TestPropertyMapper
      * @throws Exception on error
      */
     @Test
-    public void testPropertyMapperWithJavascriptBranchNameToDockerImageNameDevelopBranch() throws Exception {
+    public void testPropertyMapperWithGroovBranchNameToDockerImageNameDevelopBranch() throws Exception {
 
         PropertyMapper mapper = new PropertyMapper();
         mapper.setPropertyName("prop");
-        mapper.setLanguage("javascript");
+        mapper.setLanguage("groovy");
 
-        mapper.setMapper(IOUtils.toString(getClass().getResource("PropertyMapperBranchNameToDockerName.js"), StandardCharsets.UTF_8));
+        mapper.setMapper(IOUtils.toString(getClass().getResource("PropertyMapperBranchNameToDockerName.groovy"), StandardCharsets.UTF_8));
 
         Assert.assertEquals("", mapper.map(new GitBranchInfo("", GitBranchType.OTHER, "")));
 
