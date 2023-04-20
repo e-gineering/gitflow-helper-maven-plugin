@@ -102,6 +102,14 @@
             <version>3.6.0</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <!-- Necessary for JSR223 Scripting in TestPropertyMapper -->
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-jsr223</artifactId>
+            <version>3.0.17</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

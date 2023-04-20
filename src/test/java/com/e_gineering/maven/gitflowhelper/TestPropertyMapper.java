@@ -26,17 +26,17 @@ public class TestPropertyMapper
     }
 
     /**
-     * Test the methode {@link PropertyMapper#map(GitBranchInfo)} with a Javascript Mapper
+     * Test the methode {@link PropertyMapper#map(GitBranchInfo)} with a Groovy Mapper
      * @throws MojoExecutionException on error
      */
     @Test
-    public void testPropertyMapperWithJavascript() throws MojoExecutionException
+    public void testPropertyMapperWithGroovy() throws MojoExecutionException
     {
         PropertyMapper mapper = new PropertyMapper();
         mapper.setPropertyName("prop");
-        mapper.setLanguage("javascript");
+        mapper.setLanguage("groovy");
         mapper.setMapper(""
-            + "function map(branchName, branchType) {\n"
+            + "def map(branchName, branchType) {\n"
             +"     return branchName.toLowerCase();\n"
             + "}"
         );
