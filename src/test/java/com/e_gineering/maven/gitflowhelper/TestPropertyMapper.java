@@ -26,7 +26,7 @@ public class TestPropertyMapper
     }
 
     /**
-     * Test the methode {@link PropertyMapper#map(GitBranchInfo)} with a Groovy Mapper
+     * Tests the methode {@link PropertyMapper#map(GitBranchInfo)} with a Groovy Mapper
      * @throws MojoExecutionException on error
      */
     @Test
