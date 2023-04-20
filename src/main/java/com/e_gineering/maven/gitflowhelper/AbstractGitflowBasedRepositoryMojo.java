@@ -16,6 +16,8 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.internal.impl.EnhancedLocalRepositoryManagerFactory;
+import org.eclipse.aether.repository.AuthenticationContext;
+import org.eclipse.aether.repository.AuthenticationSelector;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
@@ -49,7 +51,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
         Objects.requireNonNull(catalog, "catalog must not be null");
         return new PrintWriter(new OutputStreamWriter(new FileOutputStream(catalog), UTF_8));
     }
-    
+
     @Parameter(property = "releaseDeploymentRepositoryId", required = true)
     String releaseDeploymentRepository;
 
@@ -58,25 +60,25 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
 
     @Parameter(property = "snapshotDeploymentRepositoryId", required = true)
     String snapshotDeploymentRepository;
-    
+
     @Parameter(property = "otherDeployBranchPattern", required = false)
     String otherDeployBranchPattern;
 
     @Parameter(defaultValue = "+", required = true)
     String otherBranchVersionDelimiter;
-    
+
     @Parameter(defaultValue = "${repositorySystemSession}", required = true)
     RepositorySystemSession repositorySystemSession;
-    
+
     @Parameter(defaultValue = "${project.build.directory}", required = true)
     File buildDirectory;
-    
+
     @Component
     private RepositorySystem repositorySystem;
-    
+
     @Component
     private EnhancedLocalRepositoryManagerFactory localRepositoryManagerFactory;
-    
+
     @Component
     private MavenProjectHelper projectHelper;
 
@@ -99,9 +101,45 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
         Optional<ArtifactRepository> mirroredRepo = project.getRemoteArtifactRepositories().stream()
                 .flatMap(r -> r.getMirroredRepositories().stream()).filter(r -> r.getId().equals(id)).findFirst();
         if(mirroredRepo.isPresent()) {
-            return mirroredRepo.get();
+            ArtifactRepository artifactRepository = mirroredRepo.get();
+            if(artifactRepository.getAuthentication() == null) {
+                artifactRepository.setAuthentication(getAuthentication(artifactRepository));
+            }
+            return artifactRepository;
         }
         throw new MojoFailureException("No Repository with id `" + id + "` is defined.");
+    }
+
+    /**
+     * Get the authentication object for an artifact repository
+     * @param repository the artifact repository
+     * @return der authentication object or @Code{null} when no authentication was found
+     */
+    private org.apache.maven.artifact.repository.Authentication getAuthentication( ArtifactRepository repository )
+    {
+        AuthenticationSelector selector = repositorySystemSession.getAuthenticationSelector();
+        if (selector == null)
+        {
+            return null;
+        }
+        RemoteRepository repo = RepositoryUtils.toRepo(repository);
+        org.eclipse.aether.repository.Authentication auth = selector.getAuthentication(repo);
+        if(auth == null)
+        {
+            return null;
+        }
+        RemoteRepository  repoWithAuth = new RemoteRepository.Builder(repo).setAuthentication(auth).build();
+        AuthenticationContext authCtx = AuthenticationContext.forRepository(repositorySystemSession, repoWithAuth);
+        if(authCtx == null) {
+            return null;
+        }
+        org.apache.maven.artifact.repository.Authentication result =
+                new org.apache.maven.artifact.repository.Authentication(authCtx.get(AuthenticationContext.USERNAME),
+                        authCtx.get(AuthenticationContext.PASSWORD));
+        result.setPrivateKey(authCtx.get(AuthenticationContext.PRIVATE_KEY_PATH));
+        result.setPassphrase(authCtx.get(AuthenticationContext.PRIVATE_KEY_PASSPHRASE));
+        authCtx.close();
+        return result;
     }
 
     /**
@@ -173,7 +211,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
      */
     void attachExistingArtifacts(@Nullable final String sourceRepository, final boolean disableLocal)
         throws MojoExecutionException, MojoFailureException {
-        
+
         List<ArtifactRepository> remoteArtifactRepositories = new ArrayList<>();
         Optional<ArtifactRepository> repo = project.getRemoteArtifactRepositories().stream().filter(r -> r.getId().equals(sourceRepository)).findFirst();
         if (repo.isPresent()) {
@@ -185,7 +223,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
             getLog().debug("Resolving existing artifacts from local repository only.");
         }
         List<RemoteRepository> remoteRepositories = RepositoryUtils.toRepos(remoteArtifactRepositories);
-        
+
         // A place to store our resolved files...
         List<ArtifactResult> resolvedArtifacts = new ArrayList<>();
 
@@ -320,8 +358,8 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                && project.getArtifact().getFile().exists()
                && project.getArtifact().getFile().isFile();
     }
-    
-    
+
+
     private String getCoordinates(ArtifactResult artifactResult) {
         return getCoordinates(
                 emptyToNull(artifactResult.getArtifact().getGroupId()),
@@ -331,17 +369,17 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                 emptyToNull(artifactResult.getArtifact().getClassifier())
         );
     }
-    
+
     private static String emptyToNull(final String s) {
         return StringUtils.isBlank(s) ? null : s;
     }
-    
+
     private String getCoordinates(Artifact artifact) {
         getLog().debug("   Encoding Coordinates For: " + artifact);
-        
+
         // Get the extension according to the artifact type.
         String extension = artifact.getArtifactHandler().getExtension();
-        
+
         return getCoordinates(
                 artifact.getGroupId(),
                 artifact.getArtifactId(),
@@ -349,7 +387,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
                 extension, artifact.hasClassifier() ? artifact.getClassifier() : null
         );
     }
-    
+
     private String getCoordinates(String groupId,
                                   String artifactId,
                                   String version,
@@ -358,7 +396,7 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
         Objects.requireNonNull(groupId, "groupId must not be null");
         Objects.requireNonNull(artifactId, "artifactId must not be null");
         Objects.requireNonNull(version, "version must not be null");
-        
+
         StringBuilder result = new StringBuilder();
         for (String s : new String[]{groupId, artifactId, extension, classifier, version}) {
             if (s != null) {

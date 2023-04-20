@@ -11,6 +11,7 @@ import java.util.Arrays;
 @RunWith(BlockJUnit4ClassRunner.class)
 public class MasterSupportBranchIT extends AbstractIntegrationTest {
 	private static final String PROMOTION_FAILED_MESSAGE = "Promotion Deploy from origin/master allowed something to Compile.";
+	public static final String FILTERED_EXECUTION = "Filtered execution should not be executing";
 
 	@Test
 	public void releaseVersionSuccess() throws Exception {
@@ -163,6 +164,15 @@ public class MasterSupportBranchIT extends AbstractIntegrationTest {
 			}
 
 			verifier.verifyTextInLog("Generating flattened POM of project"); // This should still be there.
+			verifier.verifyTextInLog("This execution must be retained"); // This should also still be there
+			try {
+				verifier.verifyTextInLog("This execution must be filtered"); // This should not be here
+				throw new VerificationException(FILTERED_EXECUTION);
+			} catch (VerificationException ve) {
+				if (ve.getMessage().equals(FILTERED_EXECUTION)) {
+					throw ve;
+				}
+			}
 			verifier.verifyTextInLog(
 					"gitflow-helper-maven-plugin: Enabling MasterPromoteExtension. GIT_BRANCH: [origin/master] matches masterBranchPattern");
 			verifier.verifyTextInLog("[INFO] Setting release artifact repository to: [releases]");

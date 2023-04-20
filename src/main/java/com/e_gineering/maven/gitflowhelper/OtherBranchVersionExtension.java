@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -202,6 +203,10 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
                     .setReactorFailureBehavior(MavenExecutionRequest.REACTOR_FAIL_NEVER)
                     .setPom(new File(topLevelProject.getFile().getParentFile(), POM_XML)) /* Use the pom file of the top-level project */
                     .setBaseDirectory(topLevelProject.getBasedir()) /* Use the basedir of the top-level project */
+                    .setRecursive(true)
+                    .setExcludedProjects(Collections.emptyList())
+                    .setSelectedProjects(Collections.emptyList())
+                    .setResumeFrom(null)
                     ;
             // The following user property on the nested execution prevents this extension to activate
             // in the nested execution. This is needed, as the extension is not reentrant.
@@ -241,7 +246,8 @@ public class OtherBranchVersionExtension extends AbstractBranchDetectingExtensio
     private MavenProject findTopLevelProject(MavenProject mavenProject) {
         MavenProject parent = mavenProject;
 
-        while (parent.getParentFile() != null) {
+        // Not using .getParentFile() as this is null when using -pl
+        while (parent.getParent() != null && parent.getParent().getFile() != null) {
             parent = parent.getParent();
         }
 
