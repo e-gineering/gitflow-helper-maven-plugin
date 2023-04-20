@@ -102,7 +102,7 @@ public class PropertyMapper
 
             Invocable inv = (Invocable) engine;
 
-            Object ret = inv.invokeFunction("map", gitBranchInfo.getName(), gitBranchInfo.getType());
+                Object ret = inv.invokeFunction("map", gitBranchInfo.getName(), gitBranchInfo.getType());
             if(ret == null) {
                 return null;
             }
