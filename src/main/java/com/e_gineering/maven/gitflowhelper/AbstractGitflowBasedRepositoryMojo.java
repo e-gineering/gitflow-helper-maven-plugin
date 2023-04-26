@@ -91,11 +91,21 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
      * @throws MojoFailureException if the repository id is not defined.
      */
     ArtifactRepository getDeploymentRepository(final String id) throws MojoFailureException {
+        return getDeploymentRepositoryOpt(id).orElseThrow(() -> new MojoFailureException("No Repository with id `" + id + "` is defined."));
+    }
+
+    /**
+     * Get an repository by the repository ID.
+     *
+     * @param id the repository identifier
+     * @return optional to the repository (never @Code{null})
+     */
+    Optional<ArtifactRepository> getDeploymentRepositoryOpt(String id) {
         Objects.requireNonNull(id, "A repository id must be specified.");
 
         Optional<ArtifactRepository> repo = project.getRemoteArtifactRepositories().stream().filter(r -> r.getId().equals(id)).findFirst();
         if (repo.isPresent()) {
-            return repo.get();
+            return repo;
         }
 
         Optional<ArtifactRepository> mirroredRepo = project.getRemoteArtifactRepositories().stream()
@@ -105,9 +115,10 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
             if(artifactRepository.getAuthentication() == null) {
                 artifactRepository.setAuthentication(getAuthentication(artifactRepository));
             }
-            return artifactRepository;
+            return Optional.of(artifactRepository);
         }
-        throw new MojoFailureException("No Repository with id `" + id + "` is defined.");
+
+        return Optional.empty();
     }
 
     /**
@@ -210,10 +221,11 @@ abstract class AbstractGitflowBasedRepositoryMojo extends AbstractGitflowBranchM
      * @throws MojoExecutionException for any unhandled maven exception
      */
     void attachExistingArtifacts(@Nullable final String sourceRepository, final boolean disableLocal)
-        throws MojoExecutionException, MojoFailureException {
+        throws MojoExecutionException {
 
         List<ArtifactRepository> remoteArtifactRepositories = new ArrayList<>();
-        Optional<ArtifactRepository> repo = project.getRemoteArtifactRepositories().stream().filter(r -> r.getId().equals(sourceRepository)).findFirst();
+
+        Optional<ArtifactRepository> repo = getDeploymentRepositoryOpt(sourceRepository);
         if (repo.isPresent()) {
             remoteArtifactRepositories.add(repo.get());
         } else {
