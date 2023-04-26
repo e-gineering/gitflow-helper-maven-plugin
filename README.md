@@ -453,6 +453,41 @@ build lifecycle (plugins, goals, etc) altered. Any plugin other than the gitflow
  explicitly referenced on the command line or those configured explicitly in the `retainPlugins` list, will be ignored (removed from the project reactor). 
 This allows us to enforce the ideal that code should never be built in the master branch.
 
+Elements of the `retainPlugins` can address a complete Maven plugin (format `<groupdId>:<artifactId>`) or a single execution (format `<groupId>:<artifactId>@<executionId>`).
+
+#### Example:
+
+```xml
+<plugins>
+    <plugin>
+        <groupId>com.e-gineering</groupId>
+        <artifactId>gitflow-helper-maven-plugin</artifactId>
+        <configuration>
+            <retainPlugins>
+                <!-- Execute the do-on-master execution of the maven-antrun-plugin on the master build -->
+                <retainPlugin>org.apache.maven.plugins:maven-antrun-plugin@do-on-master</retainPlugin>
+            </retainPlugins>
+        </configuration>
+    </plugin>
+    
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+            <execution>
+                <id>do-on-master</id>
+                <goals>
+                    <goal>run</goal>
+                </goals>
+                <phase>deploy</phase>
+            </execution>
+            <configuration>
+            </configuration>
+        </executions>
+    </plugin>
+</plugins>
+```
+
 The `promote-master` goal executes when the `gitBranchExpression` resolves to a value matching the `masterBranchPattern` or `supportBranchPattern` regular expression.
  
 This goal resolves (and downloads) the artifacts matching the current `${project.version}` from the stage repository, then attaches them to the 
