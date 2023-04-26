@@ -453,7 +453,7 @@ build lifecycle (plugins, goals, etc) altered. Any plugin other than the gitflow
  explicitly referenced on the command line or those configured explicitly in the `retainPlugins` list, will be ignored (removed from the project reactor). 
 This allows us to enforce the ideal that code should never be built in the master branch.
 
-Elements of the `retainPlugins` can address a complete Maven plugin (format `<groupdId>:<artifactId>`) or a single execution (format `<groupId>:<artifactId>@<executionId>`).
+Elements of the `retainPlugins` can address a complete Maven plugin (format `<groupId>:<artifactId>`) or a single execution (format `<groupId>:<artifactId>@<executionId>`).
 
 #### Example:
 
